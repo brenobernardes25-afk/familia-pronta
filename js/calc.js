@@ -65,37 +65,73 @@ function calcularBugIn(s) {
   const pior = limites.reduce((a, b) => (b.dias < a.dias ? b : a), { fator: '-', dias: Infinity });
   const dias = Number.isFinite(pior.dias) ? Math.floor(pior.dias) : 0;
 
-  // ---- Lista de compras para atingir a meta ----
+  // ---- Lista completa para atingir a meta, por categoria ----
   const meta = num(s.meta) || 14;
   const lista = [];
-  const add = (nome, qtd, unid, prioridade) => qtd > 0 && lista.push({ nome, qtd, unid, prioridade });
+  const add = (id, cat, nome, qtd, unid, prioridade) => qtd > 0 && lista.push({ id, cat, nome, qtd, unid, prioridade });
 
+  // Água e comida (descontando o que já tem)
   const faltaAgua = Math.max(0, aguaDia * meta - num(e.aguaL));
-  add('Água potável', Math.ceil(faltaAgua / 5), 'galões de 5 L', 'essencial');
+  add('agua', 'agua', 'Água potável', Math.ceil(faltaAgua / 5), 'galões de 5 L', 'essencial');
 
   const faltaKcal = Math.max(0, kcalDia * meta - kcalCasa);
-  REF.cesta.forEach((c) => add(c.nome, Math.ceil((faltaKcal * c.pct) / c.kcal), c.unid, 'essencial'));
+  REF.cesta.forEach((c) => add(c.id, 'comida', c.nome, Math.ceil((faltaKcal * c.pct) / c.kcal), c.unid, 'essencial'));
 
-  add('Fraldas', Math.max(0, Math.ceil(fraldas * meta - num(e.fraldas))), 'unidades', 'essencial');
-  add('Ração', Math.max(0, Math.ceil(racaoDia * meta - num(e.racaoKg))), 'kg', 'importante');
+  // Reserva de 3 dias de comida que não precisa cozinhar (Ready.gov: comida pronta, sem geladeira nem fogão)
+  const semFogao = {};
+  membros.forEach((m) => comidaLeve(m, REF.bugout.dias).forEach(({ c, n }) => { semFogao[c.id] = (semFogao[c.id] || 0) + n; }));
+  REF.bugout.comida.forEach((c) => add(`semFogao-${c.id}`, 'comida', `Sem fogão (reserva de 3 dias): ${c.nome}`, semFogao[c.id] || 0, c.unid, 'importante'));
 
-  // Fórmula: só para bebê < 12 meses quando ninguém da casa está amamentando
+  // Bebê e pets
+  add('fraldas', 'bebe', 'Fraldas', Math.max(0, Math.ceil(fraldas * meta - num(e.fraldas))), 'unidades', 'essencial');
   const amamenta = membros.some((m) => m.lactante);
-  membros.filter((m) => mesesDe(m) < 12).forEach((m) => {
+  membros.filter((m) => mesesDe(m) < 12).forEach((m, k) => {
     if (amamenta) return;
     const gPo = (mlFormulaDia(m) * meta * REF.bugout.formula.gPoPor100ml) / 100;
-    lista.push({ nome: `Fórmula infantil (${Math.round(gPo / 10) * 10} g para ${meta} dias; confira o rótulo)`,
-      qtd: Math.ceil(gPo / REF.bugout.gLataFormula), unid: `latas de ${REF.bugout.gLataFormula} g`, prioridade: 'essencial' });
+    add(`formula-${k}`, 'bebe', `Fórmula infantil (${Math.round(gPo / 10) * 10} g para ${meta} dias; confira o rótulo)`,
+      Math.ceil(gPo / REF.bugout.gLataFormula), `latas de ${REF.bugout.gLataFormula} g`, 'essencial');
   });
+  add('racao', 'pets', 'Ração', Math.max(0, Math.ceil(racaoDia * meta - num(e.racaoKg))), 'kg', 'essencial');
 
   if (s.temRemedio && num(e.remedioDias) < meta)
-    lista.push({ nome: 'Remédio de uso contínuo', qtd: meta - num(e.remedioDias), unid: 'dias a mais (fale com o médico/receita)', prioridade: 'essencial' });
+    add('remedio', 'saude', 'Remédio de uso contínuo (fale com o médico e leve a receita)', meta - num(e.remedioDias), 'dias a mais', 'essencial');
 
-  const papel = Math.ceil(membros.length * REF.papelRoloPessoaDia * meta);
-  add('Papel higiênico', papel, 'rolos', 'importante');
+  add('papel', 'higiene', 'Papel higiênico', Math.ceil(membros.length * REF.papelRoloPessoaDia * meta), 'rolos', 'importante');
 
+  // Resto da lista (data.js → casa)
+  const anos = (m) => mesesDe(m) / 12;
+  const grupo = {
+    familia: 1,
+    todos: membros.length,
+    ano1: membros.filter((m) => mesesDe(m) >= 12).length,
+    anos2: membros.filter((m) => mesesDe(m) >= 24).length,
+    anos5: membros.filter((m) => anos(m) >= 5).length,
+    adulto: membros.filter((m) => anos(m) >= 18).length,
+    mulher: membros.filter((m) => m.sexo === 'F' && anos(m) >= 12 && anos(m) < 51).length,
+    bebe: membros.filter((m) => mesesDe(m) < 36).length,
+    formula: amamenta ? 0 : membros.filter((m) => mesesDe(m) < 12).length,
+    crianca: membros.filter((m) => anos(m) >= 3 && anos(m) < 12).length,
+    oculos: membros.filter((m) => m.oculos).length,
+    pet: pets.length,
+    gato: pets.filter((p) => p.tipo === 'gato').length,
+    cao: pets.filter((p) => p.tipo !== 'gato').length,
+  };
   const tem = s.basicos || {};
-  REF.basicos.filter((b) => !tem[b.id]).forEach((b) => lista.push({ nome: b.nome, qtd: 1, unid: '', prioridade: 'importante' }));
+  const semanas = Math.ceil(meta / 7);
+  REF.casa.forEach((it) => {
+    if (it.basico && tem[it.basico]) return;
+    if (it.se && !grupo[it.se]) return;
+    const n = grupo[it.por || 'familia'];
+    const v = it.valor || 1;
+    let q;
+    if (it.regra === 'pessoa') q = n * v;
+    else if (it.regra === 'dia') q = Math.ceil((n * v * meta) / (it.tamanho || 1));
+    else if (it.regra === 'semana') q = Math.ceil((n * v * semanas) / (it.tamanho || 1));
+    else if (it.regra === 'mes') q = Math.ceil((n * v * meta) / 30 / (it.tamanho || 1));
+    else q = v;
+    if (!it.se && membros.length) q = Math.max(1, q);
+    add(it.id, it.cat, it.nome, q, it.unid || '', it.prio);
+  });
 
   // Nota 0–10: 70% dias (alvo 14), 30% itens básicos
   const pctBasicos = REF.basicos.filter((b) => tem[b.id]).length / REF.basicos.length;
@@ -148,6 +184,25 @@ function aguaBebidaLDia(m) {
   return l;
 }
 
+// Comida leve e calórica para N dias (a partir de 12 meses): arredonda para baixo
+// e completa com o item mais em falta até bater as calorias. Retorna [{ c, n }].
+function comidaLeve(m, dias) {
+  const meses = mesesDe(m);
+  if (meses < 12) return [];
+  const kcal = kcalMembro(m) * dias;
+  const lista = REF.bugout.comida.filter((c) => !c.minMeses || meses >= c.minMeses);
+  const soma = lista.reduce((a, c) => a + c.pct, 0);
+  const alvo = lista.map((c) => (kcal * c.pct) / soma);
+  const ns = lista.map((c, k) => Math.floor(alvo[k] / c.kcal));
+  let tot = ns.reduce((a, n, k) => a + n * lista[k].kcal, 0);
+  while (tot < kcal) {
+    let k = 0;
+    alvo.forEach((a, j) => { if (a - ns[j] * lista[j].kcal > alvo[k] - ns[k] * lista[k].kcal) k = j; });
+    ns[k]++; tot += lista[k].kcal;
+  }
+  return lista.map((c, k) => ({ c, n: ns[k] })).filter((x) => x.n > 0);
+}
+
 // ml de fórmula por dia (bebê < 12 meses que não mama no peito)
 function mlFormulaDia(m) {
   const F = REF.bugout.formula;
@@ -180,6 +235,9 @@ function aplica(it, m) {
     case 'cada5': return anos >= 5;
     case 'adulto': return anos >= REF.bugout.idadeAdulto;
     case 'mulher': return m.sexo === 'F' && anos >= 12 && anos < 51;
+    case 'menor12': return anos < 12;
+    case 'crianca': return meses >= 36 && anos < 12;
+    case 'equipamento': return !!m.equipamento;
     case 'remedio': return !!m.remedio;
     case 'oculos': return !!m.oculos;
     case 'alergia': return !!m.alergia;
@@ -215,21 +273,9 @@ function calcularBugOut(s) {
     if (litros) itens.push(novoItem({ id: 'agua', nome: resto > 0 ? `Água para beber (${B.diasAguaNaMochila} dia; trate água para os outros ${resto})` : 'Água para beber',
       qtd: litros, unid: 'L', gUnid: B.gPorLitroAgua, prio: 'essencial', divisivel: true }));
 
-    // Comida leve (a partir de 12 meses): arredonda para baixo e completa até bater as calorias
-    if (meses >= 12) {
-      const kcal = kcalMembro(m) * dias;
-      const lista = B.comida.filter((c) => !c.minMeses || meses >= c.minMeses);
-      const soma = lista.reduce((a, c) => a + c.pct, 0);
-      const alvo = lista.map((c) => (kcal * c.pct) / soma);
-      const ns = lista.map((c, k) => Math.floor(alvo[k] / c.kcal));
-      let tot = ns.reduce((a, n, k) => a + n * lista[k].kcal, 0);
-      while (tot < kcal) {
-        let k = 0;
-        alvo.forEach((a, j) => { if (a - ns[j] * lista[j].kcal > alvo[k] - ns[k] * lista[k].kcal) k = j; });
-        ns[k]++; tot += lista[k].kcal;
-      }
-      lista.forEach((c, k) => ns[k] && itens.push(novoItem({ id: c.id, nome: c.nome, qtd: ns[k], unid: c.unid, gUnid: c.g, prio: 'essencial', divisivel: true })));
-    }
+    // Comida leve (a partir de 12 meses)
+    comidaLeve(m, dias).forEach(({ c, n }) =>
+      itens.push(novoItem({ id: c.id, nome: c.nome, qtd: n, unid: c.unid, gUnid: c.g, prio: 'essencial', divisivel: true })));
 
     // Checklist geral
     B.itens.filter((it) => it.quem !== 'familia' && aplica(it, m)).forEach((it) => {

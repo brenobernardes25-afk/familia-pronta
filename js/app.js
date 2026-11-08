@@ -90,6 +90,120 @@ function compartilhar(texto) {
     .catch(() => window.prompt('Copie o texto abaixo:', tudo));
 }
 
+// ---------- INSTALAR NO CELULAR ----------
+// Android/Chrome: o navegador avisa que dá para instalar (beforeinstallprompt) e a gente mostra o botão.
+// iPhone: não tem botão automático; é pelo Compartilhar → "Adicionar à Tela de Início".
+// Dentro do Instagram/Facebook/TikTok não dá para instalar: tem que abrir no navegador.
+let pedidoInstalar = null;
+const UA = navigator.userAgent || '';
+const instalado = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const ehIOS = /iPhone|iPad|iPod/i.test(UA) || (/Macintosh/.test(UA) && navigator.maxTouchPoints > 1);
+const ehAndroid = /Android/i.test(UA);
+const appDentro = (() => {
+  const m = UA.match(/Instagram|FBAN|FBAV|FB_IAB|FBIOS|Messenger|TikTok|musical_ly|Bytedance|Snapchat|Line\/|LinkedInApp|Pinterest/i);
+  if (!m) return null;
+  const n = m[0].toLowerCase();
+  return n.startsWith('insta') ? 'Instagram' : n.startsWith('f') || n === 'messenger' ? 'Facebook' : /tiktok|musical|byte/.test(n) ? 'TikTok' : 'aplicativo';
+})();
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); pedidoInstalar = e; if (['home', 'instalar'].includes(S.tela)) render(); });
+window.addEventListener('appinstalled', () => { pedidoInstalar = null; toast('Instalado! Agora abra pelo ícone na tela do celular.'); render(); });
+
+async function instalarAgora() {
+  if (!pedidoInstalar) return ir('instalar');
+  pedidoInstalar.prompt();
+  const { outcome } = await pedidoInstalar.userChoice;
+  pedidoInstalar = null;
+  if (outcome !== 'accepted') ir('instalar'); else render();
+}
+
+function avisoInstalar() {
+  if (instalado()) return '';
+  return `<div class="instalar no-print">
+    <b>📲 Guarde o app no celular</b>
+    <span>Pelo link ele só abre com internet. Instalado, ele fica com ícone na tela e <b>abre sem internet</b>, como um app baixado.</span>
+    ${pedidoInstalar ? '<button class="pri" data-instalar>Instalar agora</button>' : '<button class="pri" data-ir="instalar">Como instalar (1 minuto)</button>'}
+  </div>`;
+}
+
+function telaInstalar() {
+  const url = location.href.split(/[?#]/)[0];
+  const passosAndroid = `<ol class="passos">
+      <li>Abra este link no <b>Chrome</b>.</li>
+      <li>Toque nos <b>três pontinhos ⋮</b> (em cima, à direita).</li>
+      <li>Toque em <b>"Instalar app"</b> ou <b>"Adicionar à tela inicial"</b> e confirme.</li>
+      <li>Pronto: o ícone 🏠 <b>Família Pronta</b> aparece junto com os seus outros apps.</li></ol>`;
+  const passosIOS = `<ol class="passos">
+      <li>Abra este link no <b>Safari</b> (a bússola azul).</li>
+      <li>Toque no botão <b>Compartilhar</b> (quadrado com seta para cima ⬆️, embaixo da tela).</li>
+      <li>Role a lista e toque em <b>"Adicionar à Tela de Início"</b>, depois em <b>"Adicionar"</b>.</li>
+      <li>Pronto: o ícone 🏠 <b>Família Pronta</b> aparece na tela do iPhone.</li></ol>`;
+  const principal = ehIOS ? passosIOS : passosAndroid;
+  return `
+  <button class="voltar" data-ir="home">← Voltar</button>
+  <h2>📲 Instalar no celular</h2>
+  ${instalado() ? '<div class="dica"><b>✅ Já está instalado.</b> Abra sempre pelo ícone da tela do celular.</div>' : ''}
+  ${appDentro ? `<div class="avisos"><p><b>Você abriu pelo ${appDentro}.</b> O navegador de dentro do ${appDentro} não instala apps.</p>
+    <p>Toque nos <b>três pontinhos</b> (⋯ ou ⋮, no canto de cima) e escolha <b>"Abrir no navegador"</b>${ehIOS ? ' (ou "Abrir no Safari")' : ' (ou "Abrir no Chrome")'}. Depois siga os passos abaixo.</p>
+    <button class="sec" data-copiar="${esc(url)}">Copiar o link</button></div>` : ''}
+  ${pedidoInstalar ? '<button class="pri" data-instalar>Instalar agora</button>' : ''}
+  <h3>${ehIOS ? 'No iPhone' : 'No Android'}</h3>
+  ${principal}
+  <details class="cartao"><summary>${ehIOS ? 'Tenho Android' : 'Tenho iPhone'}</summary>${ehIOS ? passosAndroid : passosIOS}</details>
+
+  <h3>Depois de instalar</h3>
+  <ul class="passos">
+    <li>Abra sempre pelo <b>ícone</b>, não pelo link.</li>
+    <li>Faça o teste: ligue o <b>modo avião</b> e toque no ícone. Tem que abrir.</li>
+    <li>O que você preenche fica <b>só neste celular</b>. Nada vai para a internet.</li>
+    <li>Não precisa de APK: no Android, o Chrome transforma o app instalado num app de verdade, que aparece na lista de apps.</li>
+    ${appDentro || !instalado() ? '<li>O que você preencheu pelo link (ou dentro do Instagram) pode não aparecer no app instalado. Antes de instalar, use <b>Meus dados → Salvar uma cópia</b>, e depois <b>Restaurar</b> dentro do app.</li>' : ''}
+  </ul>
+  <button class="sec" data-ir="dados">Meus dados (cópia de segurança)</button>`;
+}
+
+// ---------- MEUS DADOS ----------
+function telaDados() {
+  return `
+  <button class="voltar" data-ir="home">← Voltar</button>
+  <h2>💾 Meus dados</h2>
+  <p class="obs">Tudo que você preenche fica guardado <b>só neste celular</b>, sem internet e sem cadastro. Se trocar de celular, limpar o navegador ou instalar o app, salve uma cópia antes.</p>
+  <div class="acoes">
+    <button class="pri" data-exportar>Salvar uma cópia (arquivo)</button>
+    <label class="sec botao-arquivo">Restaurar de uma cópia<input type="file" accept=".json,application/json" data-importar hidden></label>
+    <button class="sec discreto" data-apagar>Apagar tudo deste celular</button>
+  </div>`;
+}
+
+function exportar() {
+  const nome = `familia-pronta-${new Date().toISOString().slice(0, 10)}.json`;
+  const dados = JSON.stringify({ app: 'familia-pronta', versao: 1, salvoEm: new Date().toISOString(), dados: S }, null, 1);
+  const arq = new File([dados], nome, { type: 'application/json' });
+  if (navigator.canShare && navigator.canShare({ files: [arq] })) {
+    navigator.share({ files: [arq], title: 'Família Pronta — cópia dos dados' }).catch(() => {});
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(arq); a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast('Cópia salva na pasta de downloads.');
+}
+
+function importar(arquivo) {
+  const leitor = new FileReader();
+  leitor.onload = () => {
+    try {
+      const j = JSON.parse(leitor.result);
+      const d = j && j.app === 'familia-pronta' ? j.dados : j;
+      if (!d || !Array.isArray(d.membros)) throw new Error('formato');
+      if (!confirm(`Restaurar a cópia com ${d.membros.length} pessoa(s)? O que está no celular agora será substituído.`)) return;
+      localStorage.setItem(CHAVE, JSON.stringify({ ...d, tela: 'home' }));
+      location.reload();
+    } catch { toast('Esse arquivo não é uma cópia do Família Pronta.'); }
+  };
+  leitor.readAsText(arquivo);
+}
+
 // ---------- TELA INICIAL ----------
 function resumoMochilas() {
   if (!S.membros.length) return '';
@@ -107,6 +221,7 @@ function telaHome() {
   const progresso = resumoMochilas();
   return `
   <header class="topo"><h1>Família Pronta</h1><p>Prepare sua casa e sua família para uma crise. Funciona sem internet.</p></header>
+  ${avisoInstalar()}
   ${vencido ? `<div class="avisos"><p>⏰ <b>Hora de revisar as mochilas.</b> Confira validade de comida, remédios e pilhas (Defesa Civil: a cada ${REF.plano.revisarMeses} meses).</p></div>` : ''}
   <button class="porta" data-ir="bugin">
     <strong>🏠 Ficar em casa</strong><span>Quantos dias sua família aguenta? E o que falta comprar.</span>
@@ -117,7 +232,8 @@ function telaHome() {
     ${rev && !vencido ? `<em class="status">Revisar até ${rev.toLocaleDateString('pt-BR')}</em>` : ''}</button>
   <button class="porta" data-ir="plano">
     <strong>📋 Plano da família</strong><span>Contatos, ponto de encontro e tipo sanguíneo para colar na geladeira.</span></button>
-  <p class="rodape">Grátis e de código aberto · @breno.paiva40</p>`;
+  <p class="rodape"><button class="link" data-ir="dados">💾 Meus dados</button> · <button class="link" data-ir="instalar">📲 Instalar</button><br>
+    Grátis e de código aberto · @breno.paiva40</p>`;
 }
 
 // ---------- FAMÍLIA (a mesma nas três telas) ----------
@@ -157,7 +273,8 @@ function telaMembro(m, i, modo) {
     ${bo ? `<div class="checks">
       <label><input type="checkbox" data-p="membros.${i}.remedio" ${m.remedio ? 'checked' : ''}> Remédio contínuo</label>
       <label><input type="checkbox" data-p="membros.${i}.oculos" ${m.oculos ? 'checked' : ''}> Usa óculos</label>
-      <label><input type="checkbox" data-p="membros.${i}.alergia" ${m.alergia ? 'checked' : ''}> Alergia grave</label></div>` : ''}
+      <label><input type="checkbox" data-p="membros.${i}.alergia" ${m.alergia ? 'checked' : ''}> Alergia grave</label>
+      <label><input type="checkbox" data-p="membros.${i}.equipamento" ${m.equipamento ? 'checked' : ''}> Usa aparelho, bengala ou cadeira</label></div>` : ''}
     ${saude}
   </div>`;
 }
@@ -221,7 +338,7 @@ function telaResultado() {
   const r = calcularBugIn(S);
   if (!S.ultimo || S.ultimo.dias !== r.dias || S.ultimo.nota !== r.nota) { S.ultimo = { dias: r.dias, nota: r.nota }; salvar(); }
   const cor = r.dias < 3 ? 'ruim' : r.dias < 7 ? 'medio' : 'bom';
-  const grupos = ['essencial', 'importante'];
+  const grupos = ['essencial', 'importante', 'extra'];
   return `
   <button class="voltar no-print" data-ir="bugin">← Ajustar respostas</button>
   <div class="placar ${cor}">
@@ -231,18 +348,27 @@ function telaResultado() {
   </div>
   <p class="obs">Base: ${REF.aguaLitrosPessoaDia} L de água por pessoa/dia e ${r.kcalDia.toLocaleString('pt-BR')} kcal/dia para a família.</p>
 
-  <h3>Lista para chegar a ${r.meta} dias</h3>
-  ${r.lista.length ? grupos.map((g) => {
-    const itens = r.lista.filter((x) => x.prioridade === g);
-    return itens.length ? `<h4>${g === 'essencial' ? 'Essencial' : 'Importante'}</h4><ul class="lista">${itens.map((x) => {
-      const id = x.nome; const ok = S.riscados[id];
-      return `<li class="${ok ? 'ok' : ''}"><label><input type="checkbox" data-risca="${esc(id)}" ${ok ? 'checked' : ''}>
-        <span>${x.qtd > 1 || x.unid ? `<b>${x.qtd}</b> ${unidade(x.qtd, x.unid)} — ` : ''}${esc(x.nome)}</span></label></li>`;
-    }).join('')}</ul>` : '';
-  }).join('') : '<p>Você já está pronto para essa meta. 💪</p>'}
+  <h3>Lista completa para chegar a ${r.meta} dias</h3>
+  <p class="obs mini">Marque o que você já tem ou já comprou. Fica salvo no celular.</p>
+  ${opcoes('filtro', (v) => (S.filtroLista || 'tudo') === v, [['tudo', `Tudo (${r.lista.length})`], ['essencial', `Só o essencial (${r.lista.filter((x) => x.prioridade === 'essencial').length})`]])}
+  ${(() => {
+    const visiveis = r.lista.filter((x) => (S.filtroLista || 'tudo') === 'tudo' || x.prioridade === 'essencial');
+    if (!visiveis.length) return '<p>Você já está pronto para essa meta. 💪</p>';
+    const prontos = visiveis.filter((x) => S.riscados[x.id]).length;
+    return `<p class="progresso"><b>${prontos}</b> de ${visiveis.length} itens prontos</p>` + Object.keys(REF.categorias).map((cat) => {
+      const itens = visiveis.filter((x) => x.cat === cat).sort((a, b) => grupos.indexOf(a.prioridade) - grupos.indexOf(b.prioridade));
+      return itens.length ? `<h4>${REF.categorias[cat]}</h4><ul class="lista">${itens.map((x) => {
+        const ok = S.riscados[x.id];
+        return `<li class="${ok ? 'ok' : ''}"><label><input type="checkbox" data-risca="${esc(x.id)}" ${ok ? 'checked' : ''}>
+          <span>${x.qtd > 1 || x.unid ? `<b>${x.qtd}</b> ${unidade(x.qtd, x.unid)} — ` : ''}${esc(x.nome)}</span>
+          <small class="tag ${x.prioridade}">${x.prioridade}</small></label></li>`;
+      }).join('')}</ul>` : '';
+    }).join('');
+  })()}
 
   <div class="dica"><b>Ficou sem água potável?</b> ${REF.hipocloritoGotasPorLitro} gotas de água sanitária (hipoclorito 2,5%, sem perfume) por litro, espere 30 minutos.</div>
 
+  ${avisoInstalar()}
   <div class="acoes no-print">
     <button class="pri" onclick="window.print()">Imprimir / salvar PDF</button>
     <button class="sec" data-share="bugin">Compartilhar resultado</button>
@@ -335,6 +461,7 @@ function telaBoResultado() {
   <div class="dica"><b>Monte e deixe pronta.</b> Mochila perto da porta. Sapato fechado e roupa do corpo já vão vestidos.
     ${rev ? `<br>Montadas em ${dataBR(S.boMontadaEm)}. <b>Revisar até ${rev.toLocaleDateString('pt-BR')}</b> (validade de comida, remédio e pilhas).` : ''}</div>
 
+  ${avisoInstalar()}
   <div class="acoes no-print">
     <button class="pri" onclick="window.print()">Imprimir / salvar PDF</button>
     <button class="sec" data-montada>${S.boMontadaEm ? 'Revisei hoje: renovar o lembrete' : '✅ Mochilas montadas: lembrar de revisar em 6 meses'}</button>
@@ -465,7 +592,7 @@ function telaPlanoImprimir() {
 }
 
 const TELAS = { home: telaHome, bugin: telaBugIn, resultado: telaResultado, bugout: telaBugOut, boResultado: telaBoResultado,
-  plano: telaPlano, planoImprimir: telaPlanoImprimir };
+  plano: telaPlano, planoImprimir: telaPlanoImprimir, instalar: telaInstalar, dados: telaDados };
 
 function render() {
   // Guarda o foco (para não perder o campo ao redesenhar a tela)
@@ -473,7 +600,8 @@ function render() {
   const foco = a && $app.contains(a) ? (a.dataset.p ? `[data-p="${a.dataset.p}"]` : a.dataset.riscabo ? `[data-riscabo="${CSS.escape(a.dataset.riscabo)}"]` : null) : null;
   $app.innerHTML = (TELAS[S.tela] || telaHome)();
   document.title = { home: 'Família Pronta', plano: 'Plano da família · Família Pronta', planoImprimir: 'Plano da família · Família Pronta',
-    bugout: 'Sair de casa · Família Pronta', boResultado: 'Mochilas 72h · Família Pronta' }[S.tela] || 'Ficar em casa · Família Pronta';
+    bugout: 'Sair de casa · Família Pronta', boResultado: 'Mochilas 72h · Família Pronta', instalar: 'Instalar · Família Pronta',
+    dados: 'Meus dados · Família Pronta' }[S.tela] || 'Ficar em casa · Família Pronta';
   if (foco) { const el = $app.querySelector(foco); if (el) el.focus({ preventScroll: true }); }
 }
 
@@ -494,7 +622,13 @@ $app.addEventListener('input', (ev) => {
 });
 $app.addEventListener('change', (ev) => {
   const t = ev.target;
-  if (t.dataset.risca) { S.riscados[t.dataset.risca] = t.checked; salvar(); t.closest('li').classList.toggle('ok', t.checked); return; }
+  if (t.dataset.risca) {
+    S.riscados[t.dataset.risca] = t.checked; salvar(); t.closest('li').classList.toggle('ok', t.checked);
+    const b = $app.querySelector('.progresso b');
+    if (b) b.textContent = $app.querySelectorAll('[data-risca]:checked').length;
+    return;
+  }
+  if (t.dataset.importar !== undefined) { if (t.files[0]) importar(t.files[0]); t.value = ''; return; }
   if (t.dataset.riscabo) {
     S.riscadosBO[t.dataset.riscabo] = t.checked; salvar();
     t.closest('li').classList.toggle('ok', t.checked); // sem redesenhar: mantém a rolagem
@@ -514,6 +648,19 @@ $app.addEventListener('click', (ev) => {
   if (b.dataset.modo) { S.bo.modo = b.dataset.modo; salvar(); return render(); }
   if (b.dataset.clima) { S.bo.clima[b.dataset.clima] = !S.bo.clima[b.dataset.clima]; salvar(); return render(); }
   if (b.dataset.orc) { S.bo.orcamento = b.dataset.orc; salvar(); return render(); }
+  if (b.dataset.filtro) { S.filtroLista = b.dataset.filtro; salvar(); return render(); }
+  if (b.dataset.instalar !== undefined) return instalarAgora();
+  if (b.dataset.copiar) {
+    const url = b.dataset.copiar;
+    return (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject())
+      .then(() => toast('Link copiado. Cole no Chrome ou no Safari.')).catch(() => window.prompt('Copie o link:', url));
+  }
+  if (b.dataset.exportar !== undefined) return exportar();
+  if (b.dataset.apagar !== undefined) {
+    if (!confirm('Apagar TUDO que está salvo neste celular (família, listas, plano)? Não dá para desfazer.')) return;
+    try { localStorage.removeItem(CHAVE); } catch {}
+    return location.reload();
+  }
   if (b.dataset.limpabo !== undefined) {
     if (!confirm('Desmarcar todos os itens das mochilas?')) return;
     S.riscadosBO = {}; salvar(); return render();
@@ -546,3 +693,5 @@ $app.addEventListener('click', (ev) => {
 
 render();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+// Pede ao navegador para não apagar os dados sozinho quando o celular ficar sem espaço
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});

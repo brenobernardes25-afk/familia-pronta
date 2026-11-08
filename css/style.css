@@ -90,3 +90,16 @@ th{color:var(--mut);font-weight:600}
   .porta,.acoes{display:none}
 }
 @media print{:root{--bg:#fff;--card:#fff;--tx:#000;--mut:#444;--bd:#bbb;--pri:#1f3a2e}}
+/* ---- v4: instalar, lista completa, dados ---- */
+.instalar{display:flex;flex-direction:column;gap:6px;background:var(--card);border:2px solid var(--ac);border-radius:14px;padding:14px;margin:12px 0}
+.instalar span{color:var(--mut);font-size:.92rem}.instalar .pri{margin-top:6px}
+.passos{padding-left:1.3em;margin:.4em 0}.passos li{margin:.45em 0}
+details.cartao summary{cursor:pointer;font-weight:600}
+.progresso{margin:.8em 0 0;color:var(--mut)}.progresso b{color:var(--tx)}
+.tag{margin-left:auto;font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;border-radius:6px;padding:1px 6px;white-space:nowrap;align-self:center;border:1px solid var(--bd);color:var(--mut)}
+.tag.essencial{border-color:var(--ac);color:var(--ac)}
+@media (prefers-color-scheme:dark){.tag.essencial{border-color:#e78a63;color:#e78a63}}
+.link{border:0;background:none;padding:0;color:var(--mut);text-decoration:underline;font-size:inherit}
+.botao-arquivo{display:block;text-align:center;cursor:pointer;border-radius:12px;border:1px solid var(--bd);background:var(--card);padding:.7em 1em;margin-top:.5em}
+.botao-arquivo:focus-within{outline:3px solid var(--ac);outline-offset:2px}
+@media print{.instalar,.tag{display:none}}

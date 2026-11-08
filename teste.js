@@ -139,5 +139,32 @@ confere(semPeso.mochilas[0].limiteG === 12000, 'adulta sem peso informado usa 60
 const tudoNum = [pe, carro, bb].every((b) => b.mochilas.every((mo) => mo.itens.every((it) => Number.isFinite(it.g) && it.g >= 0 && it.qtd > 0)));
 confere(tudoNum, 'todo item tem quantidade > 0 e peso válido');
 
+// ---------------- LISTA COMPLETA DO FICAR EM CASA ----------------
+console.log('\n=== Lista completa (ficar em casa) ===');
+const ids = (l) => l.map((x) => x.id);
+confere(Object.keys(REF.categorias).every((c) => c === 'lazer' || r.lista.some((x) => x.cat === c)), `todas as categorias aparecem (${new Set(r.lista.map((x) => x.cat)).size} categorias, ${r.lista.length} itens)`);
+confere(r.lista.every((x) => REF.categorias[x.cat] && ['essencial', 'importante', 'extra'].includes(x.prioridade)), 'todo item tem categoria e prioridade');
+confere(new Set(ids(r.lista)).size === r.lista.length, 'nenhum item repetido');
+confere(['oleo', 'sal', 'cafe', 'leite', 'farinha', 'abridor', 'banheiro', 'semReceita', 'cobertor', 'alicate'].every((id) => ids(r.lista).includes(id)),
+  'inclui óleo, sal, café, leite, farinha, abridor, banheiro sem água, remédios sem receita, cobertor e alicate');
+confere(!ids(r.lista).includes('lanterna') && !ids(r.lista).includes('velas') && ids(r.lista).includes('radio'), 'o que já tem (lanterna, velas) sai da lista; o que falta (rádio) fica');
+confere(r.lista.some((x) => x.id.startsWith('semFogao-')), 'reserva de 3 dias de comida sem fogão');
+const soHomem = calcularBugIn({ membros: [{ idade: 40, sexo: 'M', peso: 80 }], pets: [], estoque: {}, meta: 7 });
+confere(!ids(soHomem.lista).some((id) => ['absorv', 'areia', 'jogos', 'fraldas', 'lencoBebe', 'mamadeira', 'racao'].includes(id)),
+  'homem sozinho sem pet: sem absorvente, areia, jogos, fralda, ração');
+const comGato = calcularBugIn({ membros: [{ idade: 40, sexo: 'F', peso: 60 }, { idade: 6, sexo: 'M' }], pets: [{ tipo: 'gato', peso: 4 }], estoque: {}, meta: 14 });
+confere(['absorv', 'areia', 'jogos', 'caixaPet'].every((id) => ids(comGato.lista).includes(id)) && !ids(comGato.lista).includes('saquinhos'), 'mulher + criança + gato: absorvente, areia, jogos, caixa (sem saquinho de cão)');
+const sal = comGato.lista.find((x) => x.id === 'sal');
+confere(sal.qtd === 1, 'sal: 5 g × 2 pessoas × 14 dias = 140 g → 1 pacote');
+
+// ---------------- MOCHILA: ITENS NOVOS ----------------
+console.log('\n=== Mochila: itens novos ===');
+confere(temItem(m('Filha'), 'pulseira') && pe.mochilas.some((mo) => temItem(mo, 'pulseira', 'Bebê')), 'pulseira de identificação para a filha e para o bebê');
+confere(temItem(m('Filha'), 'brinquedo') || pe.mochilas.some((mo) => temItem(mo, 'brinquedo', 'Filha')), 'brinquedo/livro para a criança');
+confere(temItem(m('Pai'), 'forro') && m('Pai').itens.find((it) => it.id === 'forro').prio === 'essencial', 'chuva: forro vira essencial');
+const comEquip = calcularBugOut({ membros: [{ nome: 'Zé', idade: 70, sexo: 'M', peso: 70, equipamento: true }], pets: [], bo: {} });
+confere(comEquip.mochilas[0].itens.some((it) => it.id === 'equip'), 'quem usa aparelho/bengala recebe o item do equipamento');
+confere(pe.mochilas.some((mo) => temItem(mo, 'fotoPet')), 'pet: foto do dono com o pet');
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : '\nTudo certo.');
 process.exitCode = falhas ? 1 : 0;

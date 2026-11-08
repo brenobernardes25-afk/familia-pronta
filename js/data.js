@@ -46,18 +46,102 @@ const REF = {
   extraLactante: 500,          // IOM: ~+500 kcal/dia
 
   // Como a comida que falta é dividida (fração das calorias).
-  // ADAPTAÇÃO da ração essencial mínima do Decreto-Lei 399/1938 (cesta básica DIEESE,
-  // Região 1: arroz 3 kg, feijão 4,5 kg, açúcar 3 kg, óleo 750 ml, farinha 1,5 kg, carne 6 kg/mês).
-  // Só itens de despensa: carne → enlatados, farinha → macarrão. Calorias pela TACO.
-  // Açúcar limitado a 10% das calorias (OMS: açúcares livres < 10% da energia) e o resto
-  // redistribuído na mesma proporção. Resultado arredondado abaixo.
+  // ADAPTAÇÃO da ração essencial mínima do Decreto-Lei 399/1938 (cesta básica DIEESE, Região 1,
+  // por adulto/mês): carne 6 kg, leite 7,5 L, feijão 4,5 kg, arroz 3 kg, farinha 1,5 kg, pão 6 kg,
+  // açúcar 3 kg, óleo 750 ml, manteiga 750 g (+ batata, tomate, banana e café, que não entram aqui).
+  // Trocado por itens que duram fora da geladeira: carne → enlatados, leite → leite em pó,
+  // pão → macarrão, manteiga → óleo. Calorias de cada um pela TACO; a fração é a parte de cada
+  // item nas calorias da cesta. Açúcar limitado a 10% das calorias (OMS: açúcares livres < 10%)
+  // e o resto redistribuído na mesma proporção. Resultado arredondado abaixo (soma 100%).
   cesta: [
-    { id: 'arroz',    nome: 'Arroz',                          unid: 'kg',                 kcal: 3580, pct: 0.21 }, // TACO arroz tipo 1 cru 358 kcal/100 g
-    { id: 'feijao',   nome: 'Feijão',                         unid: 'kg',                 kcal: 3290, pct: 0.29 }, // TACO feijão carioca cru 329
-    { id: 'macarrao', nome: 'Macarrão',                       unid: 'pacotes de 500 g',   kcal: 1855, pct: 0.11 }, // TACO macarrão trigo cru 371
-    { id: 'oleo',     nome: 'Óleo',                           unid: 'garrafas de 900 ml', kcal: 7320, pct: 0.12 }, // TACO óleo de soja 884 kcal/100 g, 0,92 g/ml
+    { id: 'arroz',    nome: 'Arroz',                          unid: 'kg',                 kcal: 3580, pct: 0.13 }, // TACO arroz tipo 1 cru 358 kcal/100 g
+    { id: 'feijao',   nome: 'Feijão',                         unid: 'kg',                 kcal: 3290, pct: 0.18 }, // TACO feijão carioca cru 329
+    { id: 'macarrao', nome: 'Macarrão',                       unid: 'pacotes de 500 g',   kcal: 1855, pct: 0.22 }, // TACO macarrão trigo cru 371
+    { id: 'farinha',  nome: 'Farinha de mandioca ou de milho (fubá)', unid: 'pacotes de 500 g', kcal: 1825, pct: 0.07 }, // TACO farinha de mandioca torrada 365
+    { id: 'leite',    nome: 'Leite em pó integral',           unid: 'pacotes de 400 g',   kcal: 1988, pct: 0.06 }, // TACO leite em pó integral 497 kcal/100 g
+    { id: 'latas',    nome: 'Enlatados (sardinha, atum, carne)', unid: 'latas',           kcal: 250,  pct: 0.10 }, // ver kcalPorLata
+    { id: 'oleo',     nome: 'Óleo',                           unid: 'garrafas de 900 ml', kcal: 7320, pct: 0.14 }, // TACO óleo de soja 884 kcal/100 g, 0,92 g/ml
     { id: 'acucar',   nome: 'Açúcar',                         unid: 'kg',                 kcal: 3870, pct: 0.10 }, // TACO açúcar refinado 387
-    { id: 'latas',    nome: 'Enlatados (sardinha, atum, carne)', unid: 'latas',           kcal: 250,  pct: 0.17 }, // ver kcalPorLata
+  ],
+
+  // ---------------------------------------------------------------
+  // LISTA COMPLETA DO "FICAR EM CASA" (além de água, cesta, fraldas, fórmula, ração, remédio e papel,
+  // que são calculados em calc.js). Base: Ready.gov "Build a Kit" (lista básica + suprimentos extras),
+  // Cruz Vermelha, Defesa Civil, Ministério da Saúde.
+  // regra: familia (qtd fixa) | pessoa (1 por pessoa do grupo "por") | dia / semana / mes (valor × pessoas × tempo, dividido por "tamanho")
+  // por: todos | ano1 (1 ano+) | anos2 | anos5 | adulto | mulher (12–50) | bebe | formula | gato | cao | familia
+  // se: só entra se a casa tem alguém desse grupo. basico: é uma das perguntas "Você já tem…".
+  // Quantidades marcadas ESTIMATIVA não têm norma; as outras têm a fonte ao lado.
+  // ---------------------------------------------------------------
+  categorias: {
+    agua: '💧 Água', comida: '🍚 Comida', cozinhar: '🔥 Cozinhar sem luz', luz: '🔦 Luz, energia e notícias',
+    saude: '⛑️ Saúde', higiene: '🧼 Higiene e limpeza', bebe: '👶 Bebê', pets: '🐾 Pets',
+    docs: '📄 Documentos e dinheiro', casa: '🧰 Ferramentas e abrigo', lazer: '🎲 Crianças',
+  },
+  casa: [
+    // Água
+    { id: 'sanitaria', cat: 'agua', nome: 'Água sanitária sem perfume (tratar água: 2 gotas/litro; limpar: 1 parte para 10 de água)', regra: 'familia', unid: 'frasco de 1 L', prio: 'essencial', basico: 'sanitaria' },
+    { id: 'filtro',    cat: 'agua', nome: 'Filtro de barro ou filtro de água', regra: 'familia', prio: 'extra' },
+    // Comida (além da cesta)
+    { id: 'sal',       cat: 'comida', nome: 'Sal', regra: 'dia', por: 'ano1', valor: 5, tamanho: 1000, unid: 'pacotes de 1 kg', prio: 'importante' }, // OMS/Ministério da Saúde: até 5 g de sal por dia
+    { id: 'cafe',      cat: 'comida', nome: 'Café', regra: 'dia', por: 'adulto', valor: 20, tamanho: 500, unid: 'pacotes de 500 g', prio: 'importante' }, // DIEESE: 600 g/adulto/mês = 20 g/dia
+    { id: 'vegetais',  cat: 'comida', nome: 'Legumes e frutas que duram (milho e ervilha em lata, extrato de tomate, frutas secas)', regra: 'dia', por: 'ano1', valor: 0.5, unid: 'latas ou pacotes', prio: 'importante' }, // ESTIMATIVA: 1 a cada 2 dias por pessoa (Guia Alimentar pede legumes e frutas todo dia)
+    { id: 'temperos',  cat: 'comida', nome: 'Temperos secos e caldo em tablete', regra: 'familia', prio: 'extra' },
+    // Cozinhar sem luz
+    { id: 'gas',       cat: 'cozinhar', nome: 'Botijão de gás reserva ou fogareiro com cartuchos', regra: 'familia', prio: 'essencial', basico: 'gas' },
+    { id: 'abridor',   cat: 'cozinhar', nome: 'Abridor de lata manual', regra: 'familia', prio: 'essencial' }, // Ready.gov
+    { id: 'descart',   cat: 'cozinhar', nome: 'Pratos, copos e talheres descartáveis (economizam água de lavar)', regra: 'dia', por: 'todos', valor: 3, unid: 'jogos', prio: 'extra' }, // Ready.gov; 3 refeições/dia (Guia Alimentar)
+    { id: 'termica',   cat: 'cozinhar', nome: 'Garrafa térmica (ferve a água uma vez e economiza gás)', regra: 'familia', prio: 'extra' },
+    { id: 'panela',    cat: 'cozinhar', nome: 'Panela pequena e caneca de metal que vão no fogareiro', regra: 'familia', prio: 'extra' },
+    // Luz, energia e notícias
+    { id: 'lanterna',  cat: 'luz', nome: 'Lanterna de LED', regra: 'pessoa', por: 'adulto', unid: 'un.', prio: 'essencial', basico: 'lanterna' },
+    { id: 'pilhas',    cat: 'luz', nome: 'Pilhas reserva (do tamanho da lanterna e do rádio)', regra: 'familia', unid: 'pacote', prio: 'essencial', basico: 'pilhas' },
+    { id: 'radio',     cat: 'luz', nome: 'Rádio a pilha ou manivela (alertas da Defesa Civil sem internet)', regra: 'familia', prio: 'essencial', basico: 'radio' },
+    { id: 'powerbank', cat: 'luz', nome: 'Carregador portátil (power bank) sempre carregado', regra: 'familia', prio: 'importante', basico: 'powerbank' },
+    { id: 'velas',     cat: 'luz', nome: 'Velas e fósforo/isqueiro em pote fechado (nunca deixe vela acesa sozinha)', regra: 'familia', prio: 'importante', basico: 'velas' },
+    { id: 'carregCarro', cat: 'luz', nome: 'Carregador de celular para o carro', regra: 'familia', prio: 'extra' },
+    // Saúde
+    { id: 'kit',       cat: 'saude', nome: 'Kit de primeiros socorros', regra: 'familia', prio: 'essencial', basico: 'kit' },
+    { id: 'semReceita',cat: 'saude', nome: 'Remédios sem receita: dor e febre, diarreia, azia (pergunte ao farmacêutico)', regra: 'familia', prio: 'importante' }, // Ready.gov
+    { id: 'soro',      cat: 'saude', nome: 'Soro de reidratação oral (de graça no posto de saúde)', regra: 'pessoa', por: 'todos', valor: 2, unid: 'envelopes', prio: 'importante' }, // Ministério da Saúde; 2 por pessoa = ESTIMATIVA
+    { id: 'termometro',cat: 'saude', nome: 'Termômetro', regra: 'familia', prio: 'importante' },
+    { id: 'mascaras',  cat: 'saude', nome: 'Máscaras PFF2 (fumaça, poeira, doença)', regra: 'pessoa', por: 'anos2', valor: 2, unid: 'un.', prio: 'importante' }, // Ready.gov: máscara para todos a partir de 2 anos
+    { id: 'repelente', cat: 'saude', nome: 'Repelente (dengue: água parada aumenta depois de enchente)', regra: 'familia', prio: 'importante' }, // Ministério da Saúde
+    { id: 'oculos',    cat: 'saude', nome: 'Óculos reserva (e líquido/estojo de lente)', regra: 'pessoa', por: 'oculos', unid: 'un.', prio: 'importante', se: 'oculos' },
+    { id: 'luvas',     cat: 'saude', nome: 'Luvas descartáveis', regra: 'familia', unid: 'caixa', prio: 'extra' },
+    // Higiene e limpeza
+    { id: 'sabonete',  cat: 'higiene', nome: 'Sabonete', regra: 'semana', por: 'todos', valor: 1, unid: 'barras', prio: 'importante' }, // ESTIMATIVA: 1 por pessoa por semana
+    { id: 'pasta',     cat: 'higiene', nome: 'Pasta de dente (e escova reserva)', regra: 'mes', por: 'todos', valor: 0.5, unid: 'tubos', prio: 'importante' }, // ESTIMATIVA: 1 tubo para 2 pessoas por mês
+    { id: 'absorv',    cat: 'higiene', nome: 'Absorventes', regra: 'mes', por: 'mulher', valor: 2, unid: 'pacotes', prio: 'essencial', se: 'mulher' }, // ESTIMATIVA: 2 pacotes por mulher por mês
+    { id: 'alcool',    cat: 'higiene', nome: 'Álcool em gel 70%', regra: 'familia', prio: 'importante' }, // Ready.gov
+    { id: 'lencos',    cat: 'higiene', nome: 'Lenços umedecidos (banho sem água)', regra: 'semana', por: 'todos', valor: 0.5, unid: 'pacotes', prio: 'importante' }, // Ready.gov; quantidade ESTIMATIVA
+    { id: 'lixo',      cat: 'higiene', nome: 'Sacos de lixo reforçados e lacres', regra: 'semana', por: 'familia', valor: 1, unid: 'rolos', prio: 'importante' }, // Ready.gov; 1 rolo/semana = ESTIMATIVA
+    { id: 'banheiro',  cat: 'higiene', nome: 'Banheiro sem água: balde com tampa, sacos reforçados e areia de gato ou serragem', regra: 'familia', unid: 'kit', prio: 'importante' }, // Ready.gov / Saúde da Carolina do Norte (EUA)
+    { id: 'detergente',cat: 'higiene', nome: 'Detergente e esponja', regra: 'familia', prio: 'extra' },
+    // Bebê (fraldas e fórmula são calculadas)
+    { id: 'lencoBebe', cat: 'bebe', nome: 'Lenços umedecidos do bebê', regra: 'semana', por: 'bebe', valor: 1, unid: 'pacotes', prio: 'essencial', se: 'bebe' }, // Ready.gov; quantidade ESTIMATIVA
+    { id: 'pomada',    cat: 'bebe', nome: 'Pomada para assadura', regra: 'pessoa', por: 'bebe', unid: 'un.', prio: 'importante', se: 'bebe' }, // Ready.gov
+    { id: 'mamadeira', cat: 'bebe', nome: 'Mamadeiras e escova de lavar', regra: 'pessoa', por: 'formula', valor: 2, unid: 'un.', prio: 'essencial', se: 'formula' },
+    { id: 'febreBebe', cat: 'bebe', nome: 'Remédio de febre infantil que o pediatra indicou (com a dose anotada)', regra: 'familia', prio: 'importante', se: 'bebe' },
+    // Pets (ração é calculada)
+    { id: 'areia',     cat: 'pets', nome: 'Areia higiênica do gato', regra: 'semana', por: 'gato', valor: 0.5, unid: 'pacotes de 4 kg', prio: 'importante', se: 'gato' }, // ESTIMATIVA
+    { id: 'vacinaPet', cat: 'pets', nome: 'Cópia da carteira de vacinação do pet', regra: 'familia', prio: 'importante', se: 'pet' }, // Ready.gov Pets
+    { id: 'caixaPet',  cat: 'pets', nome: 'Caixa de transporte ou guia e coleira com plaquinha', regra: 'pessoa', por: 'pet', unid: 'un.', prio: 'importante', se: 'pet' }, // Ready.gov Pets
+    { id: 'saquinhos', cat: 'pets', nome: 'Saquinhos para fezes', regra: 'familia', unid: 'rolo', prio: 'extra', se: 'cao' },
+    // Documentos e dinheiro
+    { id: 'dinheiro',  cat: 'docs', nome: 'Dinheiro em espécie, notas pequenas (sem internet, sem Pix)', regra: 'familia', prio: 'essencial', basico: 'dinheiro' },
+    { id: 'documentos',cat: 'docs', nome: 'Cópias dos documentos em saco plástico (RG, CPF, certidões, escritura ou contrato de aluguel, seguros, cartão SUS e vacinas)', regra: 'familia', prio: 'essencial' }, // Ready.gov
+    { id: 'planoPapel',cat: 'docs', nome: 'Plano da família impresso na geladeira (botão abaixo)', regra: 'familia', prio: 'essencial' }, // Ready.gov Make a Plan
+    // Ferramentas e abrigo
+    { id: 'cobertor',  cat: 'casa', nome: 'Cobertor ou saco de dormir', regra: 'pessoa', por: 'todos', unid: 'un.', prio: 'importante' }, // Ready.gov: 1 por pessoa
+    { id: 'alicate',   cat: 'casa', nome: 'Alicate e chave inglesa (fechar registro de água e gás)', regra: 'familia', prio: 'importante' }, // Ready.gov
+    { id: 'fita',      cat: 'casa', nome: 'Fita adesiva tipo silver tape', regra: 'familia', prio: 'importante' }, // Ready.gov
+    { id: 'lona',      cat: 'casa', nome: 'Lona plástica (janela quebrada, goteira)', regra: 'familia', prio: 'importante' }, // Ready.gov
+    { id: 'apito',     cat: 'casa', nome: 'Apito (pedir socorro)', regra: 'pessoa', por: 'anos5', unid: 'un.', prio: 'importante' }, // Ready.gov
+    { id: 'extintor',  cat: 'casa', nome: 'Extintor de incêndio doméstico (tipo ABC)', regra: 'familia', prio: 'extra' }, // Ready.gov
+    { id: 'papelCaneta', cat: 'casa', nome: 'Papel e caneta', regra: 'familia', prio: 'extra' }, // Ready.gov
+    // Crianças
+    { id: 'jogos',     cat: 'lazer', nome: 'Jogos, livros, baralho e lápis de cor (passam o tempo sem energia)', regra: 'familia', prio: 'importante', se: 'crianca' }, // Ready.gov
   ],
 
   // ---------------------------------------------------------------
@@ -217,7 +301,9 @@ const REF = {
       { id: 'docs',     nome: 'Cópias dos documentos em saco plástico fechado (RG, CPF, certidão, cartão SUS e vacinas)', g: 60, quem: 'todos', prio: 'essencial' },
       { id: 'contatos', nome: 'Cartão com nome, contatos da família, ponto de encontro e telefones 199/193', g: 10, quem: 'todos', prio: 'essencial' },
       { id: 'dinheiro', nome: 'Dinheiro em espécie, notas pequenas', g: 30, quem: 'adulto', prio: 'essencial' },
-      { id: 'lanterna', nome: 'Lanterna com pilhas reserva', g: 200, gC: 100, quem: 'cada5', prio: 'essencial' },
+      { id: 'lanterna', nome: 'Lanterna (a de cabeça deixa as mãos livres) com pilhas reserva', g: 200, gC: 100, quem: 'cada5', prio: 'essencial' },
+      { id: 'pulseira', nome: 'Pulseira ou etiqueta com nome da criança e telefone dos pais', g: 10, quem: 'menor12', prio: 'essencial' }, // cartão de identificação infantil (Broward County/Save the Children)
+      { id: 'equip',    nome: 'Aparelho auditivo, bengala, andador ou outro equipamento + pilhas/carregador', g: 150, quem: 'equipamento', prio: 'essencial' }, // Ready.gov (pessoas com deficiência)
       { id: 'apito',    nome: 'Apito (para pedir socorro)', g: 10, quem: 'cada5', prio: 'essencial' },
       { id: 'manta',    nome: 'Manta térmica de emergência', g: 60, quem: 'todos', prio: 'essencial' },
       { id: 'roupa',    nome: 'Muda de roupa completa (camiseta, calça/bermuda)', g: 500, gC: 250, quem: 'todos', prio: 'essencial' },
@@ -236,6 +322,13 @@ const REF = {
       { id: 'alergia',  nome: 'Remédio da alergia receitado + cartão escrito "tenho alergia a…"', g: 50, quem: 'alergia', prio: 'essencial' },
       { id: 'celular',  nome: 'Carregador do celular + power bank carregado', g: 300, quem: 'adulto', prio: 'importante' },
       { id: 'canivete', nome: 'Canivete ou alicate multiuso', g: 150, quem: 'adulto', prio: 'importante' },
+      { id: 'toalha',   nome: 'Toalha pequena de secagem rápida', g: 150, gC: 80, quem: 'cada3', prio: 'importante' },
+      { id: 'chinelo',  nome: 'Chinelo (banho em abrigo)', g: 200, gC: 100, quem: 'cada3', prio: 'importante' },
+      { id: 'brinquedo',nome: 'Brinquedo pequeno, livro, baralho ou lápis de cor', g: 150, quem: 'crianca', prio: 'importante' }, // Ready.gov Kids
+      { id: 'forro',    nome: 'Saco de lixo grande forrando a mochila por dentro (tudo seco)', g: 40, quem: 'cada5', prio: 'importante', prioClima: { chuva: 'essencial' } },
+      { id: 'oculosSol',nome: 'Óculos de sol', g: 30, quem: 'cada5', prio: 'extra', prioClima: { calor: 'importante' } },
+      { id: 'tampao',   nome: 'Protetor de ouvido e máscara de dormir (abrigo coletivo)', g: 20, quem: 'cada5', prio: 'extra' },
+      { id: 'luvasTrab',nome: 'Luvas de trabalho (entulho, galhos, vidro)', g: 150, quem: 'adulto', prio: 'extra' },
       // Um por família
       { id: 'kit',      nome: 'Kit de primeiros socorros', g: 400, quem: 'familia', prio: 'essencial' },
       { id: 'alcool',   nome: 'Álcool em gel 70%', g: 80, quem: 'familia', prio: 'essencial' },
@@ -256,6 +349,15 @@ const REF = {
       { id: 'corda',    nome: 'Corda fina (10 m)', g: 200, quem: 'familia', prio: 'extra' },
       { id: 'lona',     nome: 'Lona plástica 2 × 3 m', g: 500, quem: 'familia', prio: 'extra' },
       { id: 'caderno',  nome: 'Bloco de papel e caneta', g: 50, quem: 'familia', prio: 'extra' },
+      { id: 'semReceita', nome: 'Remédios sem receita: dor/febre, diarreia, antialérgico', g: 80, quem: 'familia', prio: 'importante' }, // Ready.gov
+      { id: 'luvasDesc',nome: 'Luvas descartáveis (2 pares)', g: 20, quem: 'familia', prio: 'importante' },
+      { id: 'pastilhas',nome: 'Pastilhas para purificar água (farmácia)', g: 20, quem: 'familia', prio: 'importante' }, // Ready.gov
+      { id: 'zip',      nome: 'Sacos plásticos tipo zip (documentos, celular, roupa molhada)', g: 30, quem: 'familia', prio: 'importante' },
+      { id: 'chaves',   nome: 'Chave reserva de casa (e do carro)', g: 50, quem: 'familia', prio: 'importante' },
+      { id: 'cabo',     nome: 'Cabo de carregador extra', g: 40, quem: 'familia', prio: 'extra' },
+      { id: 'caneca',   nome: 'Caneca de metal (ferver água) e colher', g: 150, quem: 'familia', prio: 'extra' },
+      { id: 'fogareiro',nome: 'Fogareiro compacto com 1 cartucho de gás', g: 600, quem: 'familia', prio: 'extra' },
+      { id: 'pendrive', nome: 'Fotos dos documentos no celular e num pen drive', g: 10, quem: 'familia', prio: 'extra' },
     ],
 
     // Itens do bebê (vão na mochila de um adulto). Pesos: ESTIMATIVA (peso de produto).
@@ -263,6 +365,10 @@ const REF = {
       { id: 'mamadeira', nome: 'Mamadeiras limpas', g: 100, qtd: 2, unid: 'un.', prio: 'essencial', soFormula: true },
       { id: 'colher',    nome: 'Colher e potinho do bebê', g: 40, prio: 'importante', aPartirMeses: 6 },
       { id: 'pomada',    nome: 'Pomada para assadura', g: 60, prio: 'importante' },
+      { id: 'lencoBebe', nome: 'Lenços umedecidos do bebê (1 pacote)', g: 300, prio: 'essencial' },
+      { id: 'febreBebe', nome: 'Remédio de febre infantil indicado pelo pediatra (dose anotada)', g: 60, prio: 'importante' },
+      { id: 'naninha',   nome: 'Naninha, chupeta ou brinquedo que acalma', g: 80, prio: 'importante' },
+      { id: 'trocador',  nome: 'Trocador dobrável ou toalha para trocar fralda', g: 150, prio: 'extra' },
       { id: 'sling',     nome: 'Sling ou canguru para levar o bebê', g: 500, prio: 'importante', noCorpo: true },
     ],
 
@@ -271,6 +377,7 @@ const REF = {
     itensPet: [
       { id: 'coleira',  nome: 'Coleira com plaquinha (nome + telefone) e guia', g: 150, prio: 'essencial', noCorpo: true },
       { id: 'vacina',   nome: 'Cópia da carteira de vacinação', g: 10, prio: 'essencial' },
+      { id: 'fotoPet',  nome: 'Foto recente sua junto com o pet (prova que é seu se ele se perder)', g: 5, prio: 'essencial' }, // Ready.gov Pets
       { id: 'caixa',    nome: 'Caixa de transporte', g: 1500, prio: 'essencial', so: 'gato', noCorpo: true },
       { id: 'caixaP',   nome: 'Caixa de transporte (cão pequeno)', g: 1500, prio: 'importante', so: 'cao', ateKg: 10, noCorpo: true },
       { id: 'pote',     nome: 'Pote dobrável', g: 80, prio: 'importante' },
@@ -283,6 +390,8 @@ const REF = {
     itensCarro: [
       { id: 'cobertor', nome: 'Cobertor ou saco de dormir para cada pessoa', prio: 'importante', porPessoa: true },
       { id: 'carreg',   nome: 'Carregador de celular para o carro', prio: 'importante' },
+      { id: 'kitCarro', nome: 'Estepe calibrado, macaco, chave de roda, triângulo e cabo de chupeta', prio: 'importante' },
+      { id: 'comidaCarro', nome: 'Comida extra que não precisa cozinhar (biscoito, enlatado abre-fácil)', prio: 'extra' },
       { id: 'tanque',   nome: 'Tanque cheio (abasteça assim que sair o alerta)', prio: 'essencial' },
       { id: 'mapaC',    nome: 'Rota de saída e uma rota alternativa marcadas no mapa', prio: 'essencial' },
     ],
@@ -327,5 +436,9 @@ const REF = {
     'ECA (Lei 8.069/1990) e Estatuto da Pessoa Idosa (Lei 10.741/2003) — faixas de idade',
     'Ready.gov — Make a Plan: dois pontos de encontro e um contato fora da cidade',
     'Defesa Civil Alerta (gov.br) — SMS com o CEP para 40199',
+    'Ready.gov — Additional Emergency Supplies: remédios sem receita, descartáveis, cobertor por pessoa, extintor, jogos para crianças',
+    'OMS / Ministério da Saúde — até 5 g de sal por dia',
+    'Departamento de Saúde da Carolina do Norte (EUA) — banheiro de emergência com balde e sacos',
+    'Ready.gov Kids, Save the Children — identificação da criança e item de conforto',
   ],
 };

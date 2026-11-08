@@ -6,7 +6,7 @@ App grátis e de código aberto que prepara a família para uma crise (enchente,
 
 Três portas na tela inicial:
 
-- **🏠 Ficar em casa (bug-in)** — quantos dias a família aguenta com o que tem em casa, o que acaba primeiro, nota de 0 a 10 e lista de compras para a meta (3/7/14/30 dias), com fórmula infantil calculada pela idade e peso do bebê. Itens para riscar e botão de imprimir/salvar PDF.
+- **🏠 Ficar em casa (bug-in)** — quantos dias a família aguenta com o que tem em casa, o que acaba primeiro, nota de 0 a 10 e a **lista completa** para a meta (3/7/14/30 dias): cerca de 65 itens em 11 categorias (água, comida, cozinhar sem luz, luz e energia, saúde, higiene e limpeza, bebê, pets, documentos, ferramentas, crianças), cada um com quantidade e prioridade. Comida pela cesta básica do DIEESE (arroz, feijão, macarrão, farinha, leite em pó, enlatados, óleo, açúcar) + sal, café, legumes que duram e uma reserva de 3 dias que não precisa de fogão. Botão "Só o essencial", itens para riscar e imprimir/salvar PDF.
 - **🎒 Sair de casa (bug-out / mochila de 72h)** — usa a mesma família. Pergunta se vai a pé ou de carro, o clima (calor/frio/chuva, pode marcar mais de um), o orçamento (básico/médio/completo) e quem usa remédio contínuo, óculos ou tem alergia grave. Monta **uma mochila por pessoa** com quantidade, peso de cada item e prioridade (essencial/importante/extra), soma o peso e avisa quando passa do limite que a pessoa aguenta (adulto, adolescente, criança, idoso).
   - Bebê (até 3 anos) não carrega: as coisas dele vão para a mochila de um adulto. Bebê até 2 anos vai no colo/sling e **o peso dele entra na conta** de quem leva.
   - Pets e itens da família (kit de primeiros socorros, rádio…) vão para quem tem mais folga.
@@ -14,6 +14,10 @@ Três portas na tela inicial:
   - A pé: 1 dia de água nas costas + água sanitária e garrafa para tratar água no caminho. De carro: o resto da água em galões no carro.
   - Botão "mochilas montadas" que lembra de revisar em 6 meses (aparece na tela inicial).
 - **📋 Plano da família** — ponto de encontro perto e longe de casa, contato fora da cidade, outros contatos, tipo sanguíneo, alergias, remédios e problemas de saúde de cada um. Gera uma **folha para colar na geladeira** (com 190/192/193/199 e o SMS 40199 da Defesa Civil) e **cartões de bolso** do tamanho de um cartão de crédito, um por pessoa.
+
+**📲 Instalar no celular:** a tela inicial avisa que pelo link o app só abre com internet e ensina a instalar (Android: botão "Instalar agora" quando o Chrome deixa; iPhone: Compartilhar → Adicionar à Tela de Início). Se a pessoa abriu pelo Instagram/Facebook/TikTok, o app percebe e explica como abrir no Chrome ou no Safari, porque o navegador de dentro desses apps não instala.
+
+**💾 Meus dados:** salvar uma cópia em arquivo, restaurar e apagar tudo. O app também pede ao navegador para não apagar os dados sozinho.
 
 Também tem: botão de compartilhar o resultado (WhatsApp/Instagram), modo escuro automático, versão para imprimir de todas as telas e tudo cabe na tela do celular sem rolar para o lado.
 
@@ -67,7 +71,7 @@ E abra `http://localhost:8000`.
 2. Settings → Pages → Branch `main`, pasta `/ (root)` → Save.
 3. O link fica `https://SEU-USUARIO.github.io/familia-pronta/`. É esse que vai na bio/direct. **Já publicado em:** https://brenobernardes25-afk.github.io/familia-pronta/ (repositório: https://github.com/brenobernardes25-afk/familia-pronta).
    Para enviar uma atualização: `git add -A`, `git commit -m "o que mudou"`, `git push`. O site atualiza em ~1 minuto.
-4. **A cada atualização**, mude `V = 'fp-v3'` em `sw.js` (v4, v5...), senão o celular continua com a versão antiga. Se criar arquivo novo, coloque o nome dele na lista `ARQ` do `sw.js`. Versão atual: **fp-v3**.
+4. **A cada atualização**, mude `V = 'fp-v4'` em `sw.js` (v5, v6...), senão o celular continua com a versão antiga. Se criar arquivo novo, coloque o nome dele na lista `ARQ` do `sw.js`. Versão atual: **fp-v4**.
 
 ## De onde vêm os números
 
@@ -77,6 +81,7 @@ Fontes usadas (a lista completa também aparece no app, em "Fontes dos números"
 
 Marcados como `ESTIMATIVA` ou `ADAPTAÇÃO`:
 
+- **Quantidades de higiene e consumo da lista de casa**: sabonete (1 por pessoa por semana), pasta de dente, absorventes (2 pacotes por mulher por mês), lenços umedecidos, sacos de lixo (1 rolo por semana), areia de gato, legumes em lata (1 a cada 2 dias por pessoa) e soro (2 envelopes por pessoa). O item tem fonte (Ready.gov, Ministério da Saúde); a quantidade é nossa.
 - **Peso de cada item da mochila** (lanterna, roupa, fralda, sachê, garrafa…): peso típico do produto, não norma.
 - **Divisão da comida da mochila** (biscoito, amendoim, sardinha): o total de calorias tem fonte (IOM/TACO), a divisão entre os itens é nossa.
 - **1 dia de água nas costas**: Ready.gov pede 3 dias no kit, mas 3 dias de água estouram o peso de quase todo mundo. Os outros 2 dias saem de água tratada no caminho, ou dos galões no carro.

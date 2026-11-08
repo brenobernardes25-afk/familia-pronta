@@ -142,7 +142,15 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     await recarrega();
     const placar = await js(`document.querySelector('.placar').innerText`);
     confere(/\d+ dias?/.test(placar) && /Nota/.test(placar), `placar aparece (${placar.replace(/\s+/g, ' ').trim()})`);
-    confere((await js(`document.querySelectorAll('.lista li').length`)) > 5, 'lista de compras aparece');
+    const nTudo = await js(`document.querySelectorAll('.lista li').length`);
+    const cats = await js(`[...document.querySelectorAll('h4')].map((h) => h.textContent)`);
+    confere(nTudo > 40 && cats.length >= 9, `lista completa aparece (${nTudo} itens em ${cats.length} categorias)`);
+    confere(await js(`/Óleo/.test(document.body.innerText) && /Sal\\b/.test(document.body.innerText) && /Banheiro sem água/.test(document.body.innerText)`), 'lista tem óleo, sal e banheiro sem água');
+    await clica('[data-filtro="essencial"]');
+    const nEss = await js(`document.querySelectorAll('.lista li').length`);
+    confere(nEss > 0 && nEss < nTudo && (await js(`[...document.querySelectorAll('.tag')].every((t) => t.textContent === 'essencial')`)), `filtro "Só o essencial" (${nEss} itens)`);
+    await clica('[data-filtro="tudo"]');
+    confere(await js(`!!document.querySelector('.instalar')`), 'resultado mostra o aviso de instalar no celular');
     confere((await estado()).ultimo && typeof (await estado()).ultimo.dias === 'number', 'resultado guardado para a tela inicial');
     await clica('[data-risca]');
     await recarrega();
@@ -215,8 +223,39 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     confere((await js(`getComputedStyle(document.body).backgroundColor`)) === 'rgb(20, 22, 19)', 'modo escuro automático');
     await cdp.send('Emulation.setEmulatedMedia', { features: [] });
 
-    // ---------------- 7. Sem internet ----------------
-    console.log('\n7. Funciona sem internet');
+    // ---------------- 7. Instalar e meus dados ----------------
+    console.log('\n7. Instalar e cópia de segurança');
+    confere(await js(`!!document.querySelector('.instalar')`), 'início mostra "Guarde o app no celular"');
+    await clica('[data-ir="instalar"]');
+    confere(await js(`document.querySelectorAll('.passos li').length >= 8 && /Adicionar à tela inicial|Instalar app/.test(document.body.innerText) && /Adicionar à Tela de Início/.test(document.body.textContent)`),
+      'tela de instalar com passos para Android e iPhone');
+    await semRolagemLateral('instalar');
+    // Aberto de dentro do Instagram (iPhone)
+    await cdp.send('Emulation.setUserAgentOverride', { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 330.0.0.0' });
+    await recarrega();
+    const txtInsta = await js(`document.body.innerText`);
+    confere(/Você abriu pelo Instagram/.test(txtInsta) && /Abrir no Safari/.test(txtInsta) && /No iPhone/.test(txtInsta), 'pelo Instagram no iPhone: explica como abrir no Safari e instalar');
+    await cdp.send('Emulation.setUserAgentOverride', { userAgent: '' });
+    await recarrega();
+    // Cópia de segurança: restaurar de um arquivo
+    await clica('[data-ir="home"]'); await clica('[data-ir="dados"]');
+    const antes = await estado();
+    await js(`(() => {
+      const d = JSON.parse(localStorage.getItem('familia-pronta-v1'));
+      d.membros.push({ id: 'novo', nome: 'Vovô Restaurado', idade: 75, sexo: 'M', peso: 70 });
+      const f = new File([JSON.stringify({ app: 'familia-pronta', versao: 1, dados: d })], 'copia.json', { type: 'application/json' });
+      const dt = new DataTransfer(); dt.items.add(f);
+      const inp = document.querySelector('[data-importar]'); inp.files = dt.files;
+      inp.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`);
+    await cdp.quando('Page.loadEventFired'); await espera(200);
+    const depois = await estado();
+    confere(depois.membros.length === antes.membros.length + 1 && depois.membros.at(-1).nome === 'Vovô Restaurado' && depois.plano.encontroPerto === 'Praça da igreja',
+      'restaurar uma cópia traz de volta família e plano');
+    await js(`(() => { const d = JSON.parse(localStorage.getItem('familia-pronta-v1')); d.membros.pop(); localStorage.setItem('familia-pronta-v1', JSON.stringify(d)); return true; })()`);
+    await recarrega();
+
+    // ---------------- 8. Sem internet ----------------
+    console.log('\n8. Funciona sem internet');
     const ativo = await js(`navigator.serviceWorker.ready.then(() => true)`);
     confere(ativo, 'service worker instalado');
     for (let i = 0; i < 30 && !(await js('!!navigator.serviceWorker.controller')); i++) await espera(100);

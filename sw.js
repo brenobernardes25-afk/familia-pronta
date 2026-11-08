@@ -1,5 +1,5 @@
 // Guarda o app no celular para funcionar offline. MUDE A VERSÃO a cada atualização.
-const V = 'fp-v3';
+const V = 'fp-v4';
 const ARQ = ['./', 'index.html', 'css/style.css', 'js/data.js', 'js/calc.js', 'js/app.js', 'manifest.webmanifest',
   'icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
 
