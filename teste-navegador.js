@@ -3,6 +3,7 @@
 // e no fim desliga o servidor para conferir se o app abre SEM INTERNET.
 // Precisa: Node 22+ e Edge ou Chrome instalados. Para outro navegador: CHROME="caminho" node teste-navegador.js
 // Para salvar os PDFs de impressão: PDF_DIR="pasta" node teste-navegador.js
+// Para testar o site publicado: URL="https://SEU-USUARIO.github.io/familia-pronta/" node teste-navegador.js
 const http = require('http');
 const fs = require('fs');
 const os = require('os');
@@ -72,8 +73,10 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   const exe = acharNavegador();
   if (!exe) { console.log('Não achei Edge nem Chrome. Use: CHROME="caminho do navegador" node teste-navegador.js'); process.exit(2); }
 
-  await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
-  const BASE = `http://localhost:${servidor.address().port}/`;
+  const REMOTO = process.env.URL ? process.env.URL.replace(/\/?$/, '/') : null;
+  if (!REMOTO) await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+  const BASE = REMOTO || `http://localhost:${servidor.address().port}/`;
+  console.log('Testando', BASE);
   const perfil = fs.mkdtempSync(path.join(os.tmpdir(), 'familia-pronta-teste-'));
   const nav = spawn(exe, ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
     `--user-data-dir=${perfil}`, '--remote-debugging-port=0', 'about:blank'], { stdio: 'ignore' });
@@ -219,7 +222,10 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     for (let i = 0; i < 30 && !(await js('!!navigator.serviceWorker.controller')); i++) await espera(100);
     const guardados = await js(`caches.open('${CACHE}').then((c) => c.keys()).then((k) => k.map((r) => new URL(r.url).pathname))`);
     confere(guardados.length === ARQ.length, `todos os ${ARQ.length} arquivos guardados no celular (cache ${CACHE})`);
-    servidor.closeAllConnections(); servidor.close();
+    if (REMOTO) {
+      await cdp.send('Network.enable');
+      await cdp.send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+    } else { servidor.closeAllConnections(); servidor.close(); }
     await vai(BASE);
     confere((await js(`document.querySelectorAll('.porta').length`)) === 3, 'sem internet: o app abre');
     await vai(BASE + '?utm_source=instagram');
@@ -236,7 +242,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   } finally {
     try { await cdp.send('Browser.close'); } catch {}
     nav.kill();
-    servidor.close();
+    if (servidor.listening) servidor.close();
     setTimeout(() => { try { fs.rmSync(perfil, { recursive: true, force: true }); } catch {} }, 500);
   }
   console.log(falhas ? `\n${falhas} FALHA(S)` : '\nTudo certo no navegador.');

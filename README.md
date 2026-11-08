@@ -1,5 +1,7 @@
 # Família Pronta
 
+**Abrir o app:** https://brenobernardes25-afk.github.io/familia-pronta/
+
 App grátis e de código aberto que prepara a família para uma crise (enchente, apagão, desabamento, evacuação). Em português do Brasil, funciona **offline no celular** (PWA): abre o link, toca em "Adicionar à tela inicial", e depois disso roda sem internet. Nada sai do celular: tudo fica guardado só no aparelho da pessoa.
 
 Três portas na tela inicial:
@@ -45,6 +47,12 @@ node teste-navegador.js
 
 Abre o Edge ou o Chrome escondido, usa o app como uma pessoa usaria (digita, marca itens, preenche o plano, imprime), confere a tela de celular e o modo escuro, e no fim **desliga o servidor para ver se o app abre sem internet**. Tem que terminar com **"Tudo certo no navegador."**
 
+Para rodar o mesmo teste no site publicado (no PowerShell):
+
+```
+$env:URL="https://brenobernardes25-afk.github.io/familia-pronta/"; node teste-navegador.js
+```
+
 **2. Abrir e mexer você mesmo.** Precisa abrir por servidor, não clicando duas vezes no arquivo (o modo offline não funciona via `file://`):
 
 ```
@@ -57,7 +65,8 @@ E abra `http://localhost:8000`.
 
 1. Crie um repositório público (ex.: `familia-pronta`) e envie esta pasta.
 2. Settings → Pages → Branch `main`, pasta `/ (root)` → Save.
-3. O link fica `https://SEU-USUARIO.github.io/familia-pronta/`. É esse que vai na bio/direct.
+3. O link fica `https://SEU-USUARIO.github.io/familia-pronta/`. É esse que vai na bio/direct. **Já publicado em:** https://brenobernardes25-afk.github.io/familia-pronta/ (repositório: https://github.com/brenobernardes25-afk/familia-pronta).
+   Para enviar uma atualização: `git add -A`, `git commit -m "o que mudou"`, `git push`. O site atualiza em ~1 minuto.
 4. **A cada atualização**, mude `V = 'fp-v3'` em `sw.js` (v4, v5...), senão o celular continua com a versão antiga. Se criar arquivo novo, coloque o nome dele na lista `ARQ` do `sw.js`. Versão atual: **fp-v3**.
 
 ## De onde vêm os números
@@ -81,7 +90,7 @@ Marcados como `ESTIMATIVA` ou `ADAPTAÇÃO`:
 
 ## Próximos passos
 
-1. **Publicar** no GitHub Pages (passo a passo acima) e testar no celular de verdade (Android e iPhone): instalar na tela inicial, ligar o modo avião e abrir.
+1. **Testar no celular de verdade** (Android e iPhone): abrir o link, instalar na tela inicial, ligar o modo avião e abrir.
 2. Pedir para um profissional (Defesa Civil, pediatra, nutricionista) revisar os números marcados como ESTIMATIVA.
 3. Imagem para compartilhar (cartão "minha família aguenta X dias" pronto para story).
 
