@@ -88,7 +88,7 @@ const REF = {
     { id: 'vegetais',  cat: 'comida', nome: 'Legumes e frutas que duram (milho e ervilha em lata, extrato de tomate, frutas secas)', regra: 'dia', por: 'ano1', valor: 0.5, unid: 'latas ou pacotes', prio: 'importante' }, // ESTIMATIVA: 1 a cada 2 dias por pessoa (Guia Alimentar pede legumes e frutas todo dia)
     { id: 'temperos',  cat: 'comida', nome: 'Temperos secos e caldo em tablete', regra: 'familia', prio: 'extra' },
     // Cozinhar sem luz
-    { id: 'gas',       cat: 'cozinhar', nome: 'Botijão de gás reserva ou fogareiro com cartuchos', regra: 'familia', prio: 'essencial', basico: 'gas' },
+    { id: 'gas',       cat: 'cozinhar', nome: 'Botijão de gás reserva ou fogareiro com cartuchos (fogareiro só ao ar livre ou com janela aberta)', regra: 'familia', prio: 'essencial', basico: 'gas' },
     { id: 'abridor',   cat: 'cozinhar', nome: 'Abridor de lata manual', regra: 'familia', prio: 'essencial' }, // Ready.gov
     { id: 'descart',   cat: 'cozinhar', nome: 'Pratos, copos e talheres descartáveis (economizam água de lavar)', regra: 'dia', por: 'todos', valor: 3, unid: 'jogos', prio: 'extra' }, // Ready.gov; 3 refeições/dia (Guia Alimentar)
     { id: 'termica',   cat: 'cozinhar', nome: 'Garrafa térmica (ferve a água uma vez e economiza gás)', regra: 'familia', prio: 'extra' },
@@ -137,6 +137,7 @@ const REF = {
     { id: 'alicate',   cat: 'casa', nome: 'Alicate e chave inglesa (fechar registro de água e gás)', regra: 'familia', prio: 'importante' }, // Ready.gov
     { id: 'fita',      cat: 'casa', nome: 'Fita adesiva tipo silver tape', regra: 'familia', prio: 'importante' }, // Ready.gov
     { id: 'lona',      cat: 'casa', nome: 'Lona plástica (janela quebrada, goteira)', regra: 'familia', prio: 'importante' }, // Ready.gov
+    { id: 'bota',      cat: 'casa', nome: 'Bota de borracha e luvas grossas (água de enchente: leptospirose)', regra: 'pessoa', por: 'adulto', unid: 'pares', prio: 'importante' }, // Ministério da Saúde
     { id: 'apito',     cat: 'casa', nome: 'Apito (pedir socorro)', regra: 'pessoa', por: 'anos5', unid: 'un.', prio: 'importante' }, // Ready.gov
     { id: 'extintor',  cat: 'casa', nome: 'Extintor de incêndio doméstico (tipo ABC)', regra: 'familia', prio: 'extra' }, // Ready.gov
     { id: 'papelCaneta', cat: 'casa', nome: 'Papel e caneta', regra: 'familia', prio: 'extra' }, // Ready.gov
@@ -181,6 +182,14 @@ const REF = {
   // Ministério da Saúde: água turva precisa ser coada/decantada ANTES do cloro (o cloro não age bem na sujeira).
   tratarAgua: 'Se a água estiver turva, coe num pano limpo e deixe a sujeira assentar; use só a parte de cima. Depois pingue 2 gotas de água sanitária (sem perfume) por litro e espere 30 minutos antes de beber.',
 
+  // Dicas de segurança que salvam vidas (aparecem no "Ficar em casa" e no plano impresso)
+  seguranca: [
+    { titulo: 'Monóxido de carbono mata', texto: 'Nunca use fogareiro, churrasqueira, braseiro ou gerador dentro de casa, na garagem ou perto da janela. O gás não tem cheiro e mata dormindo.' }, // CDC / Ready.gov (Carbon Monoxide)
+    { titulo: 'Depois de enchente', texto: 'Jogue fora comida que encostou na água da enchente, inclusive lata amassada, estufada ou enferrujada. Evite andar na água (leptospirose); se precisar, use bota de borracha e luvas.' }, // Ministério da Saúde (enchentes e leptospirose)
+    { titulo: 'Geladeira sem energia', texto: 'Mantenha a porta fechada: a geladeira segura a comida por cerca de 4 horas; o freezer cheio, cerca de 48 horas. Depois disso, coma primeiro o que estraga.' }, // USDA / FoodSafety.gov
+    { titulo: 'Remédio de geladeira', texto: 'Insulina e outros remédios de geladeira: tenha uma bolsa térmica com gelo reutilizável e pergunte na farmácia quanto tempo aguentam fora.' },
+  ],
+
   // Aviso de responsabilidade (aparece no app e na impressão)
   aviso: 'O Família Pronta é um guia de preparação feito a partir de fontes oficiais. Não substitui a orientação da Defesa Civil, do médico, do pediatra ou do veterinário. Em emergência, siga as autoridades: 199 (Defesa Civil), 193 (Bombeiros), 192 (SAMU).',
 
@@ -221,10 +230,16 @@ const REF = {
       // REI (guia de trilha, EUA): mochila carregada de travessia até ~20% do peso corporal.
       // É a regra mais usada; não existe norma oficial civil.
       adulto: 0.20,
-      // Revisão sistemática (2025) sobre carga e marcha em idosos: manter abaixo de 5% do
-      // peso corporal, simétrica, para não perder estabilidade e evitar queda.
+      // Revisão sistemática (2025, Trends in Physical Education and Sport, 8 estudos) sobre carga e marcha
+      // em idosos: manter abaixo de 5% do peso corporal, simétrica, para não perder estabilidade e evitar queda.
+      // EVIDÊNCIA FRACA (estudo pequeno). Por isso o app deixa marcar "idoso(a) ativo(a)", que usa o limite de adulto.
       idoso: 0.05,
     },
+
+    // Calor: a IOM diz que atividade física e calor pedem mais água, sem dar número.
+    // ESTIMATIVA: 1 L a mais na mochila por pessoa a partir de 9 anos quando o clima é "calor".
+    aguaExtraCalorL: 1,
+    aguaExtraCalorAPartirAnos: 9,
 
     // Peso mediano por idade, quando o peso da criança não é informado.
     // 0–5 anos: Padrões de Crescimento da OMS (2006); 5–10 anos: Referência OMS 2007;
@@ -334,6 +349,7 @@ const REF = {
       // Enchente e chuva são as crises mais comuns no Brasil: a mochila inteira vai forrada e o que não pode molhar vai em saco zip.
       { id: 'forro',    nome: 'Saco de lixo grande forrando a mochila por dentro (deixa tudo seco)', g: 40, quem: 'cada3', prio: 'essencial' },
       { id: 'zip',      nome: 'Sacos zip: documentos e dinheiro, remédios, celular e carregador', g: 10, qtd: 3, unid: 'un.', quem: 'cada5', prio: 'essencial' },
+      { id: 'bota',     nome: 'Bota de borracha calçada na saída (água de enchente: leptospirose)', g: 0, quem: 'cada3', prio: 'extra', prioClima: { chuva: 'essencial' }, noCorpo: true }, // Ministério da Saúde
       { id: 'oculosSol',nome: 'Óculos de sol', g: 30, quem: 'cada5', prio: 'extra', prioClima: { calor: 'importante' } },
       { id: 'tampao',   nome: 'Protetor de ouvido e máscara de dormir (abrigo coletivo)', g: 20, quem: 'cada5', prio: 'extra' },
       { id: 'luvasTrab',nome: 'Luvas de trabalho (entulho, galhos, vidro)', g: 150, quem: 'adulto', prio: 'extra' },
@@ -364,7 +380,7 @@ const REF = {
       { id: 'chaves',   nome: 'Chave reserva de casa (e do carro)', g: 50, quem: 'familia', prio: 'importante' },
       { id: 'cabo',     nome: 'Cabo de carregador extra', g: 40, quem: 'familia', prio: 'extra' },
       { id: 'caneca',   nome: 'Caneca de metal (ferver água) e colher', g: 150, quem: 'familia', prio: 'extra' },
-      { id: 'fogareiro',nome: 'Fogareiro compacto com 1 cartucho de gás', g: 600, quem: 'familia', prio: 'extra' },
+      { id: 'fogareiro',nome: 'Fogareiro compacto com 1 cartucho de gás (só ao ar livre: monóxido de carbono)', g: 600, quem: 'familia', prio: 'extra' },
       { id: 'pendrive', nome: 'Fotos dos documentos no celular e num pen drive', g: 10, quem: 'familia', prio: 'extra' },
     ],
 
@@ -448,5 +464,9 @@ const REF = {
     'OMS / Ministério da Saúde — até 5 g de sal por dia',
     'Departamento de Saúde da Carolina do Norte (EUA) — banheiro de emergência com balde e sacos',
     'Ready.gov Kids, Save the Children — identificação da criança e item de conforto',
+    'CDC / Ready.gov — monóxido de carbono: nunca use gerador, fogareiro ou churrasqueira dentro de casa',
+    'Ministério da Saúde — enchentes: descartar alimentos que tiveram contato com a água; leptospirose',
+    'USDA / FoodSafety.gov — geladeira segura a comida ~4 h sem energia; freezer cheio ~48 h',
+    'IOM — mais água é necessária com atividade física e calor',
   ],
 };

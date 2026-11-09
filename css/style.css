@@ -1,4 +1,4 @@
-:root{--bg:#f4f1ea;--card:#fff;--tx:#1d1d1b;--mut:#6b675e;--pri:#1f3a2e;--ac:#c8552b;--ok:#2e7d4f;--md:#c99a1a;--bd:#ddd6c8}
+:root{--bg:#f4f1ea;--card:#fff;--tx:#1d1d1b;--mut:#6b675e;--pri:#1f3a2e;--ac:#b54a22;--ok:#2e7d4f;--md:#c99a1a;--bd:#ddd6c8}
 @media (prefers-color-scheme:dark){:root{--bg:#141613;--card:#1f221e;--tx:#ecebe6;--mut:#a29e94;--pri:#7fb89a;--bd:#33362f}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
@@ -108,3 +108,21 @@ details.cartao summary{cursor:pointer;font-weight:600}
 /* contraste maior na etiqueta "essencial" (texto pequeno precisa de 4,5:1) */
 .tag.essencial{border-color:#a8431f;color:#a8431f}
 @media (prefers-color-scheme:dark){.tag.essencial{border-color:#f0a07e;color:#f0a07e}.lista .ja{color:#f0a07e}}
+
+/* ---- v7: acessibilidade (auditoria) ---- */
+/* títulos das telas: h1 para leitor de tela, com o tamanho visual de antes */
+h1.tela{font-size:1.5rem;margin:.4em 0 .6em}
+/* botão selecionado no modo escuro: texto escuro sobre o verde claro (antes 2,3:1) */
+@media (prefers-color-scheme:dark){.metas .on{color:#10241a}}
+/* alvos de toque de pelo menos 40 px (WCAG pede 24; Android recomenda 48) */
+.lista label,.checks label{min-height:40px;align-items:center}
+.lista li{padding:.2em 0}
+.voltar{min-height:44px;padding:.6em 0}
+.link{min-height:44px;padding:.6em .3em}
+summary{min-height:44px;display:flex;align-items:center;cursor:pointer}
+input[type=checkbox]{width:20px;height:20px;flex:none}
+/* etiquetas legíveis */
+.tag{font-size:.75rem}
+.emerg span{font-size:.75rem}
+.alerta-dica{border-left-color:#a33224}
+@media (prefers-color-scheme:dark){.alerta-dica{border-left-color:#ff8a7a}}

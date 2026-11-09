@@ -11,14 +11,16 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const RAIZ = __dirname;
-const CACHE = fs.readFileSync(path.join(RAIZ, 'sw.js'), 'utf8').match(/const V = '([^']+)'/)[1];
+let CACHE = fs.readFileSync(path.join(RAIZ, 'sw.js'), 'utf8').match(/const V = '([^']+)'/)[1];
 const ARQ = eval(fs.readFileSync(path.join(RAIZ, 'sw.js'), 'utf8').match(/const ARQ = (\[[\s\S]*?\]);/)[1]);
 
 // ---------- servidor local ----------
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
+let swTexto = null; // para simular uma versão nova publicada
 const servidor = http.createServer((req, res) => {
   let p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+  if (p === '/sw.js' && swTexto) { res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-cache' }); return res.end(swTexto); }
   if (p.endsWith('/')) p += 'index.html';
   const f = path.join(RAIZ, p);
   if (!f.startsWith(RAIZ) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
@@ -95,8 +97,9 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     if (d.method === 'Runtime.exceptionThrown') erros.push(d.params.exceptionDetails.exception?.description || d.params.exceptionDetails.text);
     if (d.method === 'Runtime.consoleAPICalled' && d.params.type === 'error') erros.push(d.params.args.map((a) => a.value || a.description).join(' '));
     if (d.method === 'Page.javascriptDialogOpening') cdp.send('Page.handleJavaScriptDialog', { accept: true });
+    if (d.method === 'Log.entryAdded' && d.params.entry.level === 'error' && !/ERR_INTERNET_DISCONNECTED|ERR_CONNECTION_REFUSED|Failed to load resource/.test(d.params.entry.text)) erros.push('log: ' + d.params.entry.text);
   });
-  await cdp.send('Page.enable'); await cdp.send('Runtime.enable');
+  await cdp.send('Page.enable'); await cdp.send('Runtime.enable'); await cdp.send('Log.enable');
   // Celular comum (375 × 812)
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 2, mobile: true });
 
@@ -290,8 +293,43 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     confere(await js(`document.querySelector('[data-p="temRemedio"]').disabled && document.querySelector('[data-p="temRemedio"]').checked`), 'remédio marcado no "Sair de casa" aparece no "Ficar em casa"');
     await clica('[data-ir="home"]');
 
-    // ---------------- 9. Sem internet ----------------
-    console.log('\n9. Funciona sem internet');
+    // ---------------- 9. Acessibilidade, segurança e atualização ----------------
+    console.log('\n9. Acessibilidade, segurança e atualização');
+    const semH1 = [];
+    for (const t of ['home', 'bugin', 'resultado', 'bugout', 'boResultado', 'plano', 'planoImprimir', 'instalar', 'dados']) {
+      await js(`(() => { const d = JSON.parse(localStorage.getItem('familia-pronta-v1')); d.tela = '${t}'; localStorage.setItem('familia-pronta-v1', JSON.stringify(d)); return 1; })()`);
+      await recarrega();
+      if ((await js(`document.querySelectorAll('h1').length`)) !== 1) semH1.push(t);
+    }
+    confere(semH1.length === 0, 'toda tela tem um título principal (h1)' + (semH1.length ? ': falta em ' + semH1.join(', ') : ''));
+    confere(await js(`!!document.querySelector('meta[http-equiv="Content-Security-Policy"]')`), 'proteção CSP ligada (e nenhum bloqueio dela no console)');
+    await js(`(() => { const d = JSON.parse(localStorage.getItem('familia-pronta-v1')); d.tela = 'resultado'; localStorage.setItem('familia-pronta-v1', JSON.stringify(d)); return 1; })()`);
+    await recarrega();
+    confere(await js(`!document.querySelector('[onclick]') && !!document.querySelector('[data-imprimir]')`), 'sem código dentro do HTML (onclick); imprimir funciona pelo botão');
+    confere(await js(`/Monóxido de carbono mata/.test(document.body.innerText) && /Depois de enchente/.test(document.body.innerText) && /Geladeira sem energia/.test(document.body.innerText)`), 'resultado mostra as dicas de segurança');
+    const alvoMin = await js(`Math.min(...[...document.querySelectorAll('.lista label')].map((l) => l.getBoundingClientRect().height))`);
+    confere(alvoMin >= 40, `linhas de marcar com pelo menos 40 px de altura (${Math.round(alvoMin)} px)`);
+    await js(`(() => { const d = JSON.parse(localStorage.getItem('familia-pronta-v1')); d.membros.push({ id: 'v1', nome: 'Vó', idade: 70, sexo: 'F', peso: 60 }); d.tela = 'bugout'; localStorage.setItem('familia-pronta-v1', JSON.stringify(d)); return 1; })()`);
+    await recarrega();
+    await js(`(() => { const i = [...document.querySelectorAll('[data-p$=".ativo"]')]; i.at(-1).click(); return i.length; })()`);
+    await clica('[data-ir="boResultado"]');
+    confere(await js(`document.body.innerText.includes('Idoso(a) ativo(a)')`), 'idoso(a) ativo(a): opção no cadastro e rótulo na mochila');
+    await js(`(() => { const d = JSON.parse(localStorage.getItem('familia-pronta-v1')); d.membros.pop(); d.tela = 'home'; localStorage.setItem('familia-pronta-v1', JSON.stringify(d)); return 1; })()`);
+    await recarrega();
+    if (!REMOTO) {
+      // Simula uma versão nova publicada: o app tem que recarregar sozinho e avisar
+      swTexto = fs.readFileSync(path.join(RAIZ, 'sw.js'), 'utf8').replace(/const V = '[^']+'/, "const V = 'fp-teste-atualizacao'");
+      const recarregou = cdp.quando('Page.loadEventFired', 20000);
+      await js(`navigator.serviceWorker.getRegistration().then((r) => r.update()).then(() => true)`);
+      await recarregou; await espera(400);
+      confere(/atualizado/.test(await js(`(document.getElementById('toast') || {}).textContent || ''`)), 'versão nova publicada: o app recarrega sozinho e avisa "App atualizado"');
+      const chavesCache = await js(`caches.keys()`);
+      confere(chavesCache.length === 1 && chavesCache[0] === 'fp-teste-atualizacao', 'versão antiga apagada do celular, só a nova guardada');
+      CACHE = 'fp-teste-atualizacao';
+    }
+
+    // ---------------- 10. Sem internet ----------------
+    console.log('\n10. Funciona sem internet');
     const ativo = await js(`navigator.serviceWorker.ready.then(() => true)`);
     confere(ativo, 'service worker instalado');
     for (let i = 0; i < 30 && !(await js('!!navigator.serviceWorker.controller')); i++) await espera(100);

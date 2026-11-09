@@ -46,7 +46,7 @@ function limpaEstado(d) {
       idade: numOk(m.idade, 0, 120), meses: numOk(m.meses, 0, 11), sexo: m.sexo === 'F' ? 'F' : 'M',
       peso: numOk(m.peso, 0, 300), pesoCrianca: numOk(m.pesoCrianca, 0, 200),
       gestante: simOk(m.gestante), lactante: simOk(m.lactante), remedio: simOk(m.remedio), oculos: simOk(m.oculos),
-      alergia: simOk(m.alergia), alergiaAmendoim: simOk(m.alergiaAmendoim), equipamento: simOk(m.equipamento),
+      alergia: simOk(m.alergia), alergiaAmendoim: simOk(m.alergiaAmendoim), equipamento: simOk(m.equipamento), ativo: simOk(m.ativo),
       sangue: REF.plano.sangue.includes(m.sangue) ? m.sangue : '', tel: txtOk(m.tel, 30),
       alergiasTxt: txtOk(m.alergiasTxt), remediosTxt: txtOk(m.remediosTxt), saudeTxt: txtOk(m.saudeTxt),
     }));
@@ -188,7 +188,7 @@ function telaInstalar() {
   const principal = ehIOS ? passosIOS : passosAndroid;
   return `
   <button class="voltar" data-ir="home">← Voltar</button>
-  <h2>📲 Instalar no celular</h2>
+  <h1 class="tela">📲 Instalar no celular</h1>
   ${instalado() ? '<div class="dica"><b>✅ Já está instalado.</b> Abra sempre pelo ícone da tela do celular.</div>' : ''}
   ${appDentro ? `<div class="avisos"><p><b>Você abriu pelo ${appDentro}.</b> O navegador de dentro do ${appDentro} não instala apps.</p>
     <p>Toque nos <b>três pontinhos</b> (⋯ ou ⋮, no canto de cima) e escolha <b>"Abrir no navegador"</b>${ehIOS ? ' (ou "Abrir no Safari")' : ' (ou "Abrir no Chrome")'}. Depois siga os passos abaixo.</p>
@@ -213,7 +213,7 @@ function telaInstalar() {
 function telaDados() {
   return `
   <button class="voltar" data-ir="home">← Voltar</button>
-  <h2>💾 Meus dados</h2>
+  <h1 class="tela">💾 Meus dados</h1>
   <p class="obs">Tudo que você preenche fica guardado <b>só neste celular</b>, sem internet e sem cadastro. Se trocar de celular, limpar o navegador ou instalar o app, salve uma cópia antes.</p>
   <div class="acoes">
     <button class="pri" data-exportar>Salvar uma cópia (arquivo)</button>
@@ -331,7 +331,8 @@ function telaMembro(m, i, modo) {
       <label><input type="checkbox" data-p="membros.${i}.oculos" ${m.oculos ? 'checked' : ''}> Usa óculos</label>
       <label><input type="checkbox" data-p="membros.${i}.alergia" ${m.alergia ? 'checked' : ''}> Alergia grave</label>
       <label><input type="checkbox" data-p="membros.${i}.alergiaAmendoim" ${m.alergiaAmendoim ? 'checked' : ''}> Alergia a amendoim ou castanha</label>
-      <label><input type="checkbox" data-p="membros.${i}.equipamento" ${m.equipamento ? 'checked' : ''}> Usa aparelho, bengala ou cadeira</label></div>` : ''}
+      <label><input type="checkbox" data-p="membros.${i}.equipamento" ${m.equipamento ? 'checked' : ''}> Usa aparelho, bengala ou cadeira</label>
+      ${anos >= 60 ? `<label><input type="checkbox" data-p="membros.${i}.ativo" ${m.ativo ? 'checked' : ''}> Idoso(a) ativo(a): anda bem e carrega peso</label>` : ''}</div>` : ''}
     ${saude}
   </div>`;
 }
@@ -359,7 +360,7 @@ function telaBugIn() {
   const temBebe = S.membros.some((m) => (Number(m.idade) || 0) < 3);
   return `
   <button class="voltar" data-ir="home">← Voltar</button>
-  <h2>🏠 Ficar em casa</h2>
+  <h1 class="tela">🏠 Ficar em casa</h1>
 
   <h3>1. Quem mora com você</h3>
   ${blocoFamilia('bugin')}
@@ -404,6 +405,7 @@ function telaResultado() {
   const grupos = ['essencial', 'importante', 'extra'];
   return `
   <button class="voltar no-print" data-ir="bugin">← Ajustar respostas</button>
+  <h1 class="tela">🏠 Ficar em casa: resultado</h1>
   <div class="placar ${cor}">
     <span>Hoje sua família aguenta</span>
     <strong>${r.dias} ${r.dias === 1 ? 'dia' : 'dias'}</strong>
@@ -430,10 +432,12 @@ function telaResultado() {
   })()}
 
   <div class="dica"><b>Ficou sem água potável?</b> ${REF.tratarAgua}</div>
+  <h3>⚠️ Segurança</h3>
+  ${REF.seguranca.map((d) => `<div class="dica alerta-dica"><b>${d.titulo}.</b> ${d.texto}</div>`).join('')}
 
   ${avisoInstalar()}
   <div class="acoes no-print">
-    <button class="pri" onclick="window.print()">Imprimir / salvar PDF</button>
+    <button class="pri" data-imprimir>Imprimir / salvar PDF</button>
     <button class="sec" data-share="bugin">Compartilhar resultado</button>
     <button class="sec" data-ir="bugout">Montar a mochila de saída →</button>
     <button class="sec" data-ir="plano">Fazer o plano da família →</button>
@@ -450,7 +454,7 @@ function telaBugOut() {
   const bo = S.bo;
   return `
   <button class="voltar" data-ir="home">← Voltar</button>
-  <h2>🎒 Sair de casa</h2>
+  <h1 class="tela">🎒 Sair de casa</h1>
   <p class="obs">Mochila de 72 horas para cada pessoa. Usa a mesma família do "Ficar em casa".</p>
 
   <h3>1. Sua família</h3>
@@ -497,7 +501,7 @@ function telaBoResultado() {
   const rev = revisarAte();
   return `
   <button class="voltar no-print" data-ir="bugout">← Ajustar respostas</button>
-  <h2>🎒 Mochilas de 72 horas</h2>
+  <h1 class="tela">🎒 Mochilas de 72 horas</h1>
   <p class="obs">${S.bo.modo === 'carro' ? 'De carro' : 'A pé'} · ${climas.length ? climas.join(', ') : 'clima ameno'} · orçamento ${{ basico: 'básico', medio: 'médio', completo: 'completo' }[S.bo.orcamento]} · peso total ${kgTxt(r.totalG)}</p>
 
   ${r.avisos.length ? `<div class="avisos">${r.avisos.map((a) => `<p>${esc(a)}</p>`).join('')}</div>` : ''}
@@ -507,9 +511,10 @@ function telaBoResultado() {
     const colo = mo.colo.map((b) => `<p class="colo">👶 Leva ${esc(b.nome)} no sling/colo: ${kgTxt(b.g)} (já está na conta).</p>`).join('')
       + mo.coloParcial.map((b) => `<p class="colo">👶 ${esc(b.nome)} anda parte do caminho com ${esc(mo.nome)}. No colo, são mais ${kgTxt(b.g)}.</p>`).join('');
     return `<section class="mochila cartao ${mo.passou ? 'passou' : ''}">
-      <div class="mo-topo"><strong>${esc(mo.nome)}</strong><span>${ROTULO_CAT[mo.cat]}, ${mo.pesoKg.toLocaleString('pt-BR')} kg</span></div>
+      <div class="mo-topo"><strong>${esc(mo.nome)}</strong><span>${mo.ativo ? 'Idoso(a) ativo(a)' : ROTULO_CAT[mo.cat]}, ${mo.pesoKg.toLocaleString('pt-BR')} kg</span></div>
       <div class="barra" role="img" aria-label="${pct}% do limite"><i style="width:${pct}%"></i></div>
       <p class="peso"><b>${kgTxt(mo.pesoG)}</b> de ${kgTxt(mo.limiteG)} <small>(limite: ${Math.round(mo.fator * 100)}% do peso do corpo${mo.colo.length ? `; mochila ${kgTxt(mo.mochilaG)} + bebê` : ''})</small>
+        ${mo.cat === 'idoso' && !mo.ativo ? '<br><small>O limite de 5% para idosos vem de um estudo pequeno. Se a pessoa anda bem e carrega peso, marque "Idoso(a) ativo(a)" no cadastro.</small>' : ''}
         ${mo.passou ? `<br><span class="alerta">⚠️ Passou ${kgTxt(mo.excessoG)} do limite</span>` : ''}</p>
       ${colo}
       ${listaPorPrioridade(mo.itens, (it) => chaveBO(mo, it))}
@@ -526,7 +531,7 @@ function telaBoResultado() {
 
   ${avisoInstalar()}
   <div class="acoes no-print">
-    <button class="pri" onclick="window.print()">Imprimir / salvar PDF</button>
+    <button class="pri" data-imprimir>Imprimir / salvar PDF</button>
     <button class="sec" data-montada>${S.boMontadaEm ? 'Revisei hoje: renovar o lembrete' : '✅ Mochilas montadas: lembrar de revisar em 6 meses'}</button>
     <button class="sec" data-share="bugout">Compartilhar</button>
     <button class="sec" data-ir="plano">Fazer o plano da família →</button>
@@ -540,7 +545,7 @@ function telaPlano() {
   const p = S.plano;
   return `
   <button class="voltar" data-ir="home">← Voltar</button>
-  <h2>📋 Plano da família</h2>
+  <h1 class="tela">📋 Plano da família</h1>
   <p class="obs">Preencha uma vez, imprima e cole na geladeira. Cada pessoa leva um cartão na carteira e na mochila.</p>
 
   <h3>1. Onde a família se encontra</h3>
@@ -593,7 +598,7 @@ function telaPlanoImprimir() {
     <button class="voltar" data-ir="plano">← Editar plano</button>
   </div>
   <article class="folha">
-    <h2>Plano de emergência da família</h2>
+    <h1 class="tela">Plano de emergência da família</h1>
     <p class="obs mini">Atualizado em ${new Date().toLocaleDateString('pt-BR')} · Família Pronta</p>
 
     <section class="bloco emerg">
@@ -630,6 +635,8 @@ function telaPlanoImprimir() {
     ${p.lugares ? `<section class="bloco"><h3>Durante o dia</h3><p>${esc(p.lugares).replace(/\n/g, '<br>')}</p></section>` : ''}
 
     <section class="bloco dica">
+      <b>${REF.seguranca[0].titulo}.</b> ${REF.seguranca[0].texto}<br>
+      <b>${REF.seguranca[1].titulo}.</b> ${REF.seguranca[1].texto}<br>
       <b>Sem água potável?</b> ${REF.tratarAgua}
       <b>Mochilas</b> perto da porta, revisar a cada ${P.revisarMeses} meses.
     </section>
@@ -650,7 +657,7 @@ function telaPlanoImprimir() {
   </div>
 
   <div class="acoes no-print">
-    <button class="pri" onclick="window.print()">Imprimir / salvar PDF</button>
+    <button class="pri" data-imprimir>Imprimir / salvar PDF</button>
     <button class="sec" data-ir="home">Voltar ao início</button>
   </div>`;
 }
@@ -667,7 +674,7 @@ function render() {
   } catch (erro) {
     // Tela de socorro: nunca deixa a pessoa com a tela em branco
     console.warn('Família Pronta: erro ao montar a tela', erro);
-    $app.innerHTML = `<h2>Algo deu errado nesta tela</h2>
+    $app.innerHTML = `<h1 class="tela">Algo deu errado nesta tela</h1>
       <p class="obs">Seus dados continuam guardados. Tente voltar ao início. Se continuar, salve uma cópia e, se precisar, apague os dados deste celular.</p>
       <div class="acoes"><button class="pri" data-ir="home">Voltar ao início</button>
       <button class="sec" data-exportar>Salvar uma cópia dos dados</button>
@@ -678,6 +685,8 @@ function render() {
   document.title = { home: 'Família Pronta', plano: 'Plano da família · Família Pronta', planoImprimir: 'Plano da família · Família Pronta',
     bugout: 'Sair de casa · Família Pronta', boResultado: 'Mochilas 72h · Família Pronta', instalar: 'Instalar · Família Pronta',
     dados: 'Meus dados · Família Pronta' }[S.tela] || 'Ficar em casa · Família Pronta';
+  // Todo campo com nome (o navegador usa para preencher e para acessibilidade)
+  $app.querySelectorAll('input, select, textarea').forEach((el) => { if (!el.name) el.name = el.dataset.p || el.dataset.risca || el.dataset.riscabo || (el.dataset.importar !== undefined ? 'importar' : ''); });
   if (foco) { const el = $app.querySelector(foco); if (el) el.focus({ preventScroll: true }); }
 }
 
@@ -725,6 +734,7 @@ $app.addEventListener('click', (ev) => {
   if (b.dataset.clima) { S.bo.clima[b.dataset.clima] = !S.bo.clima[b.dataset.clima]; salvar(); return render(); }
   if (b.dataset.orc) { S.bo.orcamento = b.dataset.orc; salvar(); return render(); }
   if (b.dataset.filtro) { S.filtroLista = b.dataset.filtro; salvar(); return render(); }
+  if (b.dataset.imprimir !== undefined) return window.print();
   if (b.dataset.instalar !== undefined) return instalarAgora();
   if (b.dataset.copiar) {
     const url = b.dataset.copiar;
@@ -768,6 +778,19 @@ $app.addEventListener('click', (ev) => {
 });
 
 render();
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+// Atualização: quando sai versão nova, o service worker novo assume e a página recarrega uma vez
+// (assim ninguém fica usando números antigos). Na primeira instalação não recarrega.
+if ('serviceWorker' in navigator) {
+  const jaTinha = !!navigator.serviceWorker.controller;
+  let recarregou = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!jaTinha || recarregou) return;
+    recarregou = true;
+    try { sessionStorage.setItem('fp-atualizou', '1'); } catch {}
+    location.reload();
+  });
+  navigator.serviceWorker.register('sw.js').then((r) => r.update()).catch(() => {});
+}
+try { if (sessionStorage.getItem('fp-atualizou')) { sessionStorage.removeItem('fp-atualizou'); toast('App atualizado para a versão mais nova.'); } } catch {}
 // Pede ao navegador para não apagar os dados sozinho quando o celular ficar sem espaço
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});

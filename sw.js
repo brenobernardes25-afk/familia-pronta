@@ -1,5 +1,7 @@
-// Guarda o app no celular para funcionar offline. MUDE A VERSÃO a cada atualização.
-const V = 'fp-v6';
+// Guarda o app no celular para funcionar offline.
+// A versão muda sozinha com: node teste.js --carimbar (o teste falha se os arquivos mudarem sem mudar a versão).
+const V = 'fp-v8';
+// conteudo: 62f35ba6432e11df
 const ARQ = ['./', 'index.html', 'css/style.css', 'js/data.js', 'js/calc.js', 'js/app.js', 'manifest.webmanifest',
   'icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
 

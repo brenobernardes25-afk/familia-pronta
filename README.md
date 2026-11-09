@@ -22,6 +22,14 @@ Três portas na tela inicial:
 
 **Segurança das orientações:** aviso de responsabilidade na tela inicial, nos resultados e no plano impresso (não substitui Defesa Civil, médico, pediatra ou veterinário). Alergia a amendoim tira o amendoim da mochila de todo mundo; alergia grave avisa para conferir os rótulos; bebê na fórmula recebe a orientação da OMS (fórmula líquida pronta). Água turva: coar e decantar antes do cloro (Ministério da Saúde).
 
+**Dicas que salvam vidas** (resultado do "Ficar em casa" e plano impresso): monóxido de carbono (nunca fogareiro, churrasqueira ou gerador dentro de casa), depois de enchente (jogar fora comida que encostou na água, leptospirose, bota de borracha), geladeira sem energia (~4 h; freezer cheio ~48 h) e remédio de geladeira (bolsa térmica). Na mochila: bota de borracha na chuva, aviso de leptospirose, insulina e fogareiro só ao ar livre.
+
+**Idoso(a) ativo(a):** o limite de 5% para idosos vem de um estudo pequeno; quem marca "ativo(a)" usa o limite de adulto. **Calor:** 1 L de água a mais na mochila a partir de 9 anos (a IOM diz que calor e esforço pedem mais água).
+
+**Acessibilidade** (auditoria no navegador): contraste mínimo de 4,5:1 em tudo (claro e escuro), alvos de toque de 40 px ou mais, letra mínima de 12 px, um título principal por tela, nome em todo campo e botão para leitor de tela. **Proteção:** CSP (só roda código do próprio app) e nada de código dentro do HTML.
+
+**Atualização automática:** quando sai versão nova, o app recarrega sozinho uma vez e avisa "App atualizado".
+
 **Prévia do link:** `og.png` (1200×630) aparece quando o link é compartilhado no WhatsApp/Instagram.
 
 Também tem: botão de compartilhar o resultado (WhatsApp/Instagram), modo escuro automático, versão para imprimir de todas as telas e tudo cabe na tela do celular sem rolar para o lado.
@@ -48,7 +56,15 @@ Também tem: botão de compartilhar o resultado (WhatsApp/Instagram), modo escur
 node teste.js
 ```
 
-Tem que terminar com **"Tudo certo."** (são mais de 40 conferências dos números: água, comida, fraldas, fórmula, pets, peso das mochilas, casos estranhos como família vazia ou só bebê).
+Tem que terminar com **"Tudo certo."** (são mais de 80 conferências dos números: água, comida, fraldas, fórmula, pets, peso das mochilas, casos estranhos como família vazia ou só bebê, e um teste de estresse com 3.000 famílias aleatórias, 1 em 4 com dados absurdos).
+
+**Mudou algum arquivo do app?** Rode antes:
+
+```
+node teste.js --carimbar
+```
+
+Ele sobe sozinho a versão do `sw.js` (senão os celulares continuam com o app antigo). Se esquecer, o `node teste.js` falha e avisa.
 
 ```
 node teste-navegador.js
@@ -76,22 +92,22 @@ E abra `http://localhost:8000`.
 2. Settings → Pages → Branch `main`, pasta `/ (root)` → Save.
 3. O link fica `https://SEU-USUARIO.github.io/familia-pronta/`. É esse que vai na bio/direct. **Já publicado em:** https://brenobernardes25-afk.github.io/familia-pronta/ (repositório: https://github.com/brenobernardes25-afk/familia-pronta).
    Para enviar uma atualização: `git add -A`, `git commit -m "o que mudou"`, `git push`. O site atualiza em ~1 minuto.
-4. **A cada atualização**, mude `V = 'fp-v6'` em `sw.js` (v7, v8...), senão o celular continua com a versão antiga. Se criar arquivo novo, coloque o nome dele na lista `ARQ` do `sw.js`. Versão atual: **fp-v6**.
+4. **A cada atualização**, rode `node teste.js --carimbar` (sobe a versão do `sw.js` sozinho) e depois `node teste.js`. Se criar arquivo novo, coloque o nome dele na lista `ARQ` do `sw.js`. Versão atual: **fp-v8**.
 
 ## De onde vêm os números
 
-Fontes usadas (a lista completa também aparece no app, em "Fontes dos números"): Ready.gov/FEMA, Cruz Vermelha Americana, Defesa Civil, Ministério da Saúde (água sanitária, alimentação de menores de 2 anos, fórmula), OMS (curvas de crescimento, açúcar), Tabela TACO (Unicamp), IOM (calorias e água por idade), Projeto Esfera, DIEESE (cesta básica), Academia Americana de Pediatria (mochila infantil e fórmula), CDC (peso de 11 a 17 anos), NRC/WSAVA/AAHA/AAFCO (cães e gatos), ECA e Estatuto da Pessoa Idosa (faixas de idade).
+Fontes usadas (a lista completa também aparece no app, em "Fontes dos números"): Ready.gov/FEMA, Cruz Vermelha Americana, Defesa Civil, Ministério da Saúde (água sanitária, alimentação de menores de 2 anos, fórmula), OMS (curvas de crescimento, açúcar), Tabela TACO (Unicamp), IOM (calorias e água por idade), Projeto Esfera, DIEESE (cesta básica), Academia Americana de Pediatria (mochila infantil e fórmula), OMS e CDC (peso de criança: 5–10 anos conferido no arquivo oficial da OMS, 11–17 no arquivo oficial do CDC), NRC/WSAVA/AAHA/AAFCO (cães e gatos), ECA e Estatuto da Pessoa Idosa (faixas de idade).
 
 ### Números sem fonte oficial (marcados no `data.js`)
 
 Marcados como `ESTIMATIVA` ou `ADAPTAÇÃO`:
 
 - **Quantidades de higiene e consumo da lista de casa**: sabonete (1 por pessoa por semana), pasta de dente, absorventes (2 pacotes por mulher por mês), lenços umedecidos, sacos de lixo (1 rolo por semana), areia de gato, legumes em lata (1 a cada 2 dias por pessoa) e soro (2 envelopes por pessoa). O item tem fonte (Ready.gov, Ministério da Saúde); a quantidade é nossa.
-- **Peso médio de crianças de 5 a 10 anos** (OMS 2007): valores da tabela, não conferidos no arquivo oficial. Os de 11 a 17 anos foram conferidos no arquivo oficial do CDC (`wtage.csv`).
 - **Peso de cada item da mochila** (lanterna, roupa, fralda, sachê, garrafa…): peso típico do produto, não norma.
 - **Divisão da comida da mochila** (biscoito, amendoim, sardinha): o total de calorias tem fonte (IOM/TACO), a divisão entre os itens é nossa.
 - **1 dia de água nas costas**: Ready.gov pede 3 dias no kit, mas 3 dias de água estouram o peso de quase todo mundo. Os outros 2 dias saem de água tratada no caminho, ou dos galões no carro.
-- **Limite de carga**: adulto 20% (REI, guia de trilha; não existe norma civil), adolescente 15% (meio da faixa da Academia Americana de Pediatria), idoso 5% (uma única revisão científica de 2025).
+- **Limite de carga**: adulto 20% (REI, guia de trilha; não existe norma civil), adolescente 15% (meio da faixa da Academia Americana de Pediatria), idoso 5% (uma única revisão científica pequena, de 2025; por isso existe a opção "idoso(a) ativo(a)").
+- **Água a mais no calor** (1 L a partir de 9 anos): a IOM diz que calor pede mais água, mas não dá número.
 - **Bebê no colo conta no peso até 2 anos**: decisão do app.
 - **Cesta do "Ficar em casa"**: proporções adaptadas da cesta básica DIEESE (Decreto-Lei 399/1938), com açúcar limitado a 10% das calorias (OMS).
 - **Fraldas por dia**: fonte é uma ONG (National Diaper Bank Network) e um fabricante, não um órgão de governo.

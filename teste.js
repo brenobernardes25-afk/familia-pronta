@@ -1,8 +1,33 @@
 // Teste rápido dos cálculos: node teste.js
-global.REF = (new Function(require('fs').readFileSync('js/data.js', 'utf8') + ';return REF'))();
+// Depois de mudar qualquer arquivo do app: node teste.js --carimbar  (sobe a versão do sw.js)
+const fs = require('fs');
+
+// ---------------- TRAVA DE VERSÃO DO SERVICE WORKER ----------------
+// Se um arquivo guardado no celular mudar e a versão do sw.js não, os celulares ficam com o app velho.
+{
+  const sw = fs.readFileSync('sw.js', 'utf8');
+  const arq = eval(sw.match(/const ARQ = (\[[\s\S]*?\]);/)[1]).filter((a) => a !== './');
+  const hash = require('crypto').createHash('sha256');
+  arq.forEach((a) => { hash.update(a + '|'); hash.update(fs.readFileSync(a)); });
+  const atual = hash.digest('hex').slice(0, 16);
+  const gravado = (sw.match(/\/\/ conteudo: (\S+)/) || [])[1];
+  if (process.argv.includes('--carimbar')) {
+    if (gravado === atual) { console.log('Nada mudou; versão continua', sw.match(/const V = '([^']+)'/)[1]); process.exit(0); }
+    const n = Number(sw.match(/const V = 'fp-v(\d+)'/)[1]);
+    fs.writeFileSync('sw.js', sw.replace(/const V = 'fp-v\d+'/, `const V = 'fp-v${n + 1}'`).replace(/\/\/ conteudo: \S+/, `// conteudo: ${atual}`));
+    console.log(`Versão subiu para fp-v${n + 1} (conteúdo ${atual}).`);
+    process.exit(0);
+  }
+  if (gravado !== atual) {
+    console.log('  FALHOU arquivos do app mudaram, mas a versão do sw.js não. Rode: node teste.js --carimbar');
+    process.exitCode = 1;
+  } else console.log('  ok   versão do sw.js combina com os arquivos do app');
+}
+
+global.REF = (new Function(fs.readFileSync('js/data.js', 'utf8') + ';return REF'))();
 const { calcularBugIn, calcularBugOut, petKcalDia, petRacaoKgDia, petAguaLDia } = require('./js/calc.js');
 
-let falhas = 0;
+let falhas = process.exitCode ? 1 : 0;
 const confere = (ok, msg) => { console.log(ok ? '  ok  ' : '  FALHOU', msg); if (!ok) falhas++; };
 const kg = (g) => (g / 1000).toFixed(1) + ' kg';
 
@@ -190,6 +215,69 @@ confere(inRem.limitante === 'Remédio de uso contínuo' && inRem.dias === 2 && i
 confere(/coe/.test(REF.tratarAgua) && pe.avisos.some((a) => a.includes('coe num pano')), 'tratar água: coar a água turva antes do cloro');
 confere(pesoCorporal({ idade: 12, sexo: 'M' }) === 40.7 && pesoCorporal({ idade: 17, sexo: 'F' }) === 55.2, 'peso 11–17 anos pelo arquivo oficial do CDC (12 anos M = 40,7 kg)');
 confere(/Não substitui/.test(REF.aviso), 'aviso de responsabilidade existe');
+
+// ---------------- AUDITORIA: SEGURANÇA, IDOSO ATIVO, CALOR, NOMES ----------------
+console.log('\n=== Auditoria ===');
+confere(REF.seguranca.some((d) => /monóxido/i.test(d.titulo)) && REF.seguranca.some((d) => /enchente/i.test(d.titulo)) && REF.seguranca.some((d) => /4 horas/.test(d.texto)),
+  'dicas de segurança: monóxido de carbono, enchente, geladeira sem energia');
+const chuvaB = calcularBugOut({ membros: [{ nome: 'Ana', idade: 35, sexo: 'F', peso: 60, remedio: true }], pets: [], bo: { clima: { chuva: true }, orcamento: 'basico' } });
+const bota = chuvaB.mochilas[0].itens.find((it) => it.id === 'bota');
+confere(bota && bota.prio === 'essencial' && bota.noCorpo && bota.g === 0, 'chuva: bota de borracha essencial, vai no pé (não pesa)');
+confere(chuvaB.avisos.some((a) => a.includes('leptospirose')) && chuvaB.avisos.some((a) => a.includes('insulina')), 'chuva → aviso de leptospirose; remédio → aviso de insulina');
+const quente = calcularBugOut({ membros: [{ nome: 'Rui', idade: 40, sexo: 'M', peso: 80 }, { nome: 'Bia', idade: 6, sexo: 'F' }], pets: [], bo: { clima: { calor: true } } });
+const frio = calcularBugOut({ membros: [{ nome: 'Rui', idade: 40, sexo: 'M', peso: 80 }, { nome: 'Bia', idade: 6, sexo: 'F' }], pets: [], bo: { clima: {} } });
+const aguaDe = (b, n) => b.mochilas.flatMap((mo) => mo.itens).filter((it) => it.id === 'agua' && (it.de === n || (!it.de && b.mochilas.find((mo) => mo.itens.includes(it)).nome === n))).reduce((a, it) => a + it.qtd, 0);
+confere(aguaDe(quente, 'Rui') === aguaDe(frio, 'Rui') + 1 && aguaDe(quente, 'Bia') === aguaDe(frio, 'Bia'), 'calor: +1 L para quem tem 9 anos ou mais (criança de 6 não muda)');
+const idosos = calcularBugOut({ membros: [{ nome: 'Zé', idade: 68, sexo: 'M', peso: 70 }, { nome: 'Lu', idade: 68, sexo: 'F', peso: 70, ativo: true }], pets: [], bo: {} });
+confere(idosos.mochilas[0].limiteG === 3500 && idosos.mochilas[1].limiteG === 14000 && idosos.mochilas[1].ativo, 'idoso: 5% (3,5 kg); idoso ativo: limite de adulto (14 kg)');
+const homonimos = { membros: [{ nome: 'João', idade: 40, sexo: 'M', peso: 80 }, { nome: 'João', idade: 10, sexo: 'M' }], pets: [{ nome: 'João', tipo: 'cao', peso: 8 }], bo: {} };
+const copia = JSON.stringify(homonimos);
+const hom = calcularBugOut(homonimos);
+confere(hom.mochilas.map((mo) => mo.nome).join('|') === 'João|João (2)' && hom.mochilas[0].itens.some((it) => it.de === 'João (pet)'), 'nomes repetidos: "João", "João (2)" e o pet "João (pet)"');
+confere(JSON.stringify(homonimos) === copia, 'o cálculo não altera os dados da família');
+confere(calcularBugIn({ membros: [{ idade: 'abc', peso: Infinity }, { idade: -5, meses: 99 }], pets: [{ peso: 1e9 }], estoque: { aguaL: -10 }, meta: 7 }).dias >= 0,
+  'valores absurdos não quebram o cálculo nem dão dias negativos');
+
+// ---------------- ESTRESSE: 3.000 famílias aleatórias (inclusive absurdas) ----------------
+{
+  let semente = 2026;
+  const rnd = () => ((semente = (semente * 1103515245 + 12345) % 2147483648) / 2147483648);
+  const pick = (a) => a[Math.floor(rnd() * a.length)];
+  const lixo = [undefined, null, '', 'abc', -5, NaN, Infinity, 1e9];
+  const problemas = new Set();
+  const finito = (v) => typeof v === 'number' && Number.isFinite(v);
+  for (let i = 0; i < 3000; i++) {
+    const absurda = i % 4 === 0;
+    const s = {
+      membros: Array.from({ length: Math.floor(rnd() * 8) }, () => ({
+        nome: pick(['', 'Ana', 'Ana', 'João', '  ']), idade: absurda && rnd() < 0.3 ? pick(lixo) : pick([0, 1, 2, 4, 8, 12, 17, 30, 59, 60, 80, 120]),
+        meses: pick([0, 5, 11, absurda ? 50 : 3]), sexo: pick(['M', 'F', absurda ? '?' : 'M']), peso: absurda && rnd() < 0.3 ? pick(lixo) : pick(['', 50, 80, 150]),
+        lactante: rnd() < 0.1, gestante: rnd() < 0.05, remedio: rnd() < 0.2, alergiaAmendoim: rnd() < 0.05, ativo: rnd() < 0.3, equipamento: rnd() < 0.05,
+      })),
+      pets: Array.from({ length: Math.floor(rnd() * 3) }, () => ({ nome: pick(['', 'Thor', 'Ana']), tipo: pick(['cao', 'gato']), peso: absurda ? pick(lixo) : pick([3, 20, 50]) })),
+      estoque: { aguaL: absurda ? pick(lixo) : pick([0, 50]), secoKg: pick([0, 10]) }, meta: pick([3, 7, 14, 30]),
+      bo: { modo: pick(['pe', 'carro']), clima: { calor: rnd() < 0.4, frio: rnd() < 0.4, chuva: rnd() < 0.4 }, orcamento: pick(['basico', 'medio', 'completo']) },
+    };
+    try {
+      const r = calcularBugIn(s);
+      if (!finito(r.dias) || r.dias < 0 || !finito(r.nota) || r.nota < 0 || r.nota > 10) problemas.add('ficar em casa: dias/nota inválidos');
+      if (r.lista.some((x) => !Number.isInteger(x.qtd) || x.qtd <= 0)) problemas.add('ficar em casa: quantidade inválida');
+      if (new Set(r.lista.map((x) => x.id)).size !== r.lista.length) problemas.add('ficar em casa: item repetido');
+      const b = calcularBugOut(s);
+      b.mochilas.forEach((mo) => {
+        if (!finito(mo.pesoG) || !finito(mo.limiteG) || mo.limiteG <= 0) problemas.add('mochila: peso/limite inválido');
+        if (mo.itens.some((it) => !finito(it.g) || it.g < 0 || !(it.qtd > 0))) problemas.add('mochila: item com peso/quantidade inválido');
+        const ch = mo.itens.map((it) => it.id + '|' + (it.de || ''));
+        if (new Set(ch).size !== ch.length) problemas.add('mochila: item repetido (riscar marcaria dois)');
+      });
+      const nomes = b.mochilas.map((mo) => mo.nome).concat(b.bebes.map((x) => x.nome));
+      if (new Set(nomes).size !== nomes.length) problemas.add('nomes repetidos');
+      if (s.membros.some((m) => m.alergiaAmendoim) && b.mochilas.some((mo) => mo.itens.some((it) => it.id === 'amendoim'))) problemas.add('amendoim com alergia');
+      if (b.semPortador.length && b.mochilas.length) problemas.add('item sem ninguém para carregar');
+    } catch (e) { problemas.add('quebrou: ' + e.message); }
+  }
+  confere(problemas.size === 0, '3.000 famílias aleatórias (1 em 4 com dados absurdos) sem nenhum problema' + (problemas.size ? ': ' + [...problemas].join('; ') : ''));
+}
 
 console.log(falhas ? `\n${falhas} FALHA(S)` : '\nTudo certo.');
 process.exitCode = falhas ? 1 : 0;

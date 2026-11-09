@@ -2,16 +2,17 @@
 // CÁLCULOS — funções puras, sem tela. Testáveis com: node teste.js
 // =====================================================================
 
-const mesesDe = (m) => (Number(m.idade) || 0) * 12 + (Number(m.meses) || 0);
-const numero = (v) => Number(v) || 0;
+// Números sempre finitos e sem negativo, mesmo se chegar lixo (idade 120 anos no máximo, meses 0–11).
+const numero = (v) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : 0; };
+const mesesDe = (m) => Math.min(120, numero(m.idade)) * 12 + Math.min(11, numero(m.meses));
 
 // Calorias/dia de uma pessoa
 function kcalMembro(m) {
   const anos = mesesDe(m) / 12;
   const faixa = REF.kcalPorFaixa.find((f) => anos < f.ate);
   let k = faixa[m.sexo] || faixa.M;
-  if (anos >= 19 && Number(m.peso) > 0) {
-    const r = Number(m.peso) / REF.pesoRef[m.sexo === 'F' ? 'F' : 'M'];
+  if (anos >= 19 && numero(m.peso) > 0) {
+    const r = numero(m.peso) / REF.pesoRef[m.sexo === 'F' ? 'F' : 'M'];
     k *= Math.min(1.25, Math.max(0.75, r));
   }
   if (m.gestante) k += REF.extraGestante;
@@ -27,7 +28,7 @@ function fraldasDia(m) {
 
 // ---- Pets: energia → ração e água ----
 function petKcalDia(p) {
-  const kg = numero(p.peso);
+  const kg = Math.min(100, numero(p.peso));
   if (!kg) return 0;
   const rer = REF.petRER.fator * Math.pow(kg, REF.petRER.expoente);
   return rer * (REF.petFatorManutencao[p.tipo] || REF.petFatorManutencao.cao);
@@ -165,9 +166,9 @@ function categoria(m) {
 function pesoCorporal(m) {
   const sexo = m.sexo === 'F' ? 'F' : 'M';
   const anos = mesesDe(m) / 12;
-  if (anos >= 19) return numero(m.peso) || REF.pesoRef[sexo];
-  if (numero(m.pesoCrianca) > 0) return numero(m.pesoCrianca);
-  if (anos >= 18 && numero(m.peso) > 0) return numero(m.peso);
+  if (anos >= 19) return Math.min(300, numero(m.peso)) || REF.pesoRef[sexo];
+  if (numero(m.pesoCrianca) > 0) return Math.min(200, numero(m.pesoCrianca));
+  if (anos >= 18 && numero(m.peso) > 0) return Math.min(300, numero(m.peso));
   const meses = mesesDe(m);
   let r = REF.bugout.pesoMedianoKg[0];
   REF.bugout.pesoMedianoKg.forEach((x) => { if (meses >= x.m) r = x; });
@@ -261,7 +262,10 @@ function calcularBugOut(s) {
   const dias = B.dias;
   const permitidas = PRIOS_ORC[bo.orcamento] || PRIOS_ORC.medio;
   const ok = (p) => p && permitidas.includes(p);
-  const nomeDe = (m, i) => (m.nome && String(m.nome).trim()) || `Pessoa ${i + 1}`;
+  // Nomes únicos: pai e filho "João" viram "João" e "João (2)" (senão "de João" fica ambíguo)
+  const nomesBase = membros.map((m, i) => (m.nome && String(m.nome).trim()) || `Pessoa ${i + 1}`);
+  const nomesUnicos = nomesBase.map((n, i) => { const k = nomesBase.slice(0, i).filter((x) => x === n).length; return k ? `${n} (${k + 1})` : n; });
+  const nomeDe = (m, i) => nomesUnicos[i];
   const temLactante = membros.some((m) => m.lactante);
   const semAmendoim = membros.some((m) => m.alergiaAmendoim);
 
@@ -272,7 +276,8 @@ function calcularBugOut(s) {
     const itens = [];
 
     // Água para beber (só os dias que vão nas costas; o resto se trata no caminho ou vai no carro)
-    const litros = Math.ceil(aguaBebidaLDia(m) * B.diasAguaNaMochila);
+    const calor = bo.clima && bo.clima.calor && meses >= B.aguaExtraCalorAPartirAnos * 12 ? B.aguaExtraCalorL : 0;
+    const litros = Math.ceil(aguaBebidaLDia(m) * B.diasAguaNaMochila + calor);
     const resto = dias - B.diasAguaNaMochila;
     if (litros) itens.push(novoItem({ id: 'agua', nome: resto > 0 ? `Água para beber (${B.diasAguaNaMochila} dia; trate água para os outros ${resto})` : 'Água para beber',
       qtd: litros, unid: 'L', gUnid: B.gPorLitroAgua, prio: 'essencial', divisivel: true }));
@@ -286,7 +291,7 @@ function calcularBugOut(s) {
       const p = prioridadeDe(it, bo);
       if (!ok(p)) return;
       const qtd = it.porDia ? Math.max(1, Math.ceil(REF[it.porDia] * dias)) : (it.qtd || 1);
-      itens.push(novoItem({ id: it.id, nome: it.nome, qtd, unid: it.unid || '', gUnid: crianca && it.gC ? it.gC : it.g, prio: p }));
+      itens.push(novoItem({ id: it.id, nome: it.nome, qtd, unid: it.unid || '', gUnid: crianca && it.gC ? it.gC : it.g, prio: p, noCorpo: it.noCorpo }));
     });
 
     // Bebê: fraldas, leite, papinha
@@ -320,8 +325,10 @@ function calcularBugOut(s) {
     const nome = nomeDe(m, i);
     if (cat === 'bebe') { bebes.push({ idx: i, nome, meses: mesesDe(m), pesoKg: pesoCorporal(m), itens: porPessoa[i], vaiCom: [] }); return; }
     const pesoKg = pesoCorporal(m);
-    mochilas.push({ idx: i, nome, cat, idade: Number(m.idade) || 0, pesoKg, fator: B.limiteCarga[cat],
-      limiteG: Math.round(pesoKg * B.limiteCarga[cat] * 1000), itens: porPessoa[i].slice(), gestante: !!m.gestante,
+    const ativo = cat === 'idoso' && m.ativo === true; // idoso(a) ativo(a): usa o limite de adulto
+    const fator = ativo ? B.limiteCarga.adulto : B.limiteCarga[cat];
+    mochilas.push({ idx: i, nome, cat, ativo, idade: numero(m.idade), pesoKg, fator,
+      limiteG: Math.round(pesoKg * fator * 1000), itens: porPessoa[i].slice(), gestante: !!m.gestante,
       colo: [], coloParcial: [] });
   });
 
@@ -345,11 +352,20 @@ function calcularBugOut(s) {
     b.colo = mo.nome;
   });
 
+  // Nomes dos pets, também sem repetir (nem com pessoas, nem entre si). Não altera os dados da família.
+  const nomesPets = [];
+  pets.forEach((p, j) => {
+    const base = (p.nome && String(p.nome).trim()) || `${p.tipo === 'gato' ? 'Gato' : 'Cão'} ${j + 1}`;
+    let nome = base; let k = 1;
+    while (nomesUnicos.includes(nome) || nomesPets.includes(nome)) nome = `${base} (pet${k++ > 1 ? ' ' + k : ''})`;
+    nomesPets.push(nome);
+  });
+
   // Itens sem dono (bebê, pets, família), do mais pesado para o mais leve
   const avulsos = [];
   bebes.forEach((b) => b.itens.forEach((it) => avulsos.push({ ...it, de: b.nome })));
   pets.forEach((p, j) => {
-    const nomePet = (p.nome && String(p.nome).trim()) || `${p.tipo === 'gato' ? 'Gato' : 'Cão'} ${j + 1}`;
+    const nomePet = nomesPets[j];
     const kgRacao = petRacaoKgDia(p) * dias;
     const lAgua = petAguaLDia(p) * B.diasAguaNaMochila;
     if (kgRacao) avulsos.push({ ...novoItem({ id: 'racao', nome: 'Ração em saco bem fechado (ou pote com tampa)', qtd: Math.ceil(kgRacao * 1000 / 10) * 10, unid: 'g', gUnid: 1, prio: 'essencial', divisivel: true }), de: nomePet });
@@ -435,7 +451,10 @@ function calcularBugOut(s) {
   if (semAmendoim) avisos.push('Alergia a amendoim na família: a mochila de ninguém leva amendoim (evita contato). A comida foi trocada por biscoito e sardinha.');
   if (membros.some((m) => m.alergia)) avisos.push('Quem tem alergia grave: confira o rótulo de TODA a comida da mochila (biscoito tem trigo e leite, sardinha é peixe) e leve o remédio de emergência receitado sempre junto da pessoa, nunca na mochila de outro.');
   if (!temLactante && membros.some((m) => mesesDe(m) < 12)) avisos.push('Bebê na fórmula: em emergência, a OMS recomenda fórmula líquida pronta, que não depende de água limpa. Se usar pó, prepare com água fervida (ou mineral) e mamadeira bem lavada; jogue fora o que sobrar em 2 horas.');
-  if (bo.clima && bo.clima.calor) avisos.push('No calor, beba antes de sentir sede e descanse na sombra. Água de rio só depois de coar e tratar.');
+  if (bo.clima && bo.clima.chuva) avisos.push('Chuva ou enchente: saia de bota de borracha e evite andar na água (leptospirose). Comida que encostar na água da enchente vai fora.');
+  if (membros.some((m) => m.remedio)) avisos.push('Remédio de geladeira (insulina, alguns colírios): leve em bolsa térmica com gelo reutilizável e pergunte na farmácia quanto tempo aguenta fora.');
+  if (mochilas.some((mo) => mo.itens.some((it) => it.id === 'fogareiro'))) avisos.push('Fogareiro: use só ao ar livre. Dentro de barraca, carro ou casa fechada, o monóxido de carbono mata sem cheiro.');
+  if (bo.clima && bo.clima.calor) avisos.push(`No calor, beba antes de sentir sede e descanse na sombra: por isso cada pessoa a partir de ${B.aguaExtraCalorAPartirAnos} anos leva ${B.aguaExtraCalorL} L de água a mais. Água de rio só depois de coar e tratar.`);
   if (dias > B.diasAguaNaMochila) avisos.push(`A mochila leva ${B.diasAguaNaMochila} dia de água; mais que isso passa do peso que dá para carregar. Para os outros dias, encha a garrafa no caminho e trate. ${REF.tratarAgua}`);
   mochilas.filter((mo) => mo.passou).forEach((mo) => {
     const kgTxt = (mo.excessoG / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 });

@@ -1,0 +1,3 @@
+# Quebra de linha sempre LF (a trava de versão do sw.js depende do conteúdo exato dos arquivos)
+* text=auto eol=lf
+*.png binary
