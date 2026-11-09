@@ -11,6 +11,7 @@ Três portas na tela inicial:
   - Bebê (até 3 anos) não carrega: as coisas dele vão para a mochila de um adulto. Bebê até 2 anos vai no colo/sling e **o peso dele entra na conta** de quem leva.
   - Pets e itens da família (kit de primeiros socorros, rádio…) vão para quem tem mais folga.
   - Se criança ou idoso passa do limite, água, comida e roupa passam para um adulto que ainda tenha folga.
+  - À prova d'água: toda mochila vai forrada com saco de lixo grande, e cada pessoa leva 3 sacos zip (documentos e dinheiro, remédios, celular e carregador). Cada item que não pode molhar diz onde vai.
   - A pé: 1 dia de água nas costas + água sanitária e garrafa para tratar água no caminho. De carro: o resto da água em galões no carro.
   - Botão "mochilas montadas" que lembra de revisar em 6 meses (aparece na tela inicial).
 - **📋 Plano da família** — ponto de encontro perto e longe de casa, contato fora da cidade, outros contatos, tipo sanguíneo, alergias, remédios e problemas de saúde de cada um. Gera uma **folha para colar na geladeira** (com 190/192/193/199 e o SMS 40199 da Defesa Civil) e **cartões de bolso** do tamanho de um cartão de crédito, um por pessoa.
@@ -71,7 +72,7 @@ E abra `http://localhost:8000`.
 2. Settings → Pages → Branch `main`, pasta `/ (root)` → Save.
 3. O link fica `https://SEU-USUARIO.github.io/familia-pronta/`. É esse que vai na bio/direct. **Já publicado em:** https://brenobernardes25-afk.github.io/familia-pronta/ (repositório: https://github.com/brenobernardes25-afk/familia-pronta).
    Para enviar uma atualização: `git add -A`, `git commit -m "o que mudou"`, `git push`. O site atualiza em ~1 minuto.
-4. **A cada atualização**, mude `V = 'fp-v4'` em `sw.js` (v5, v6...), senão o celular continua com a versão antiga. Se criar arquivo novo, coloque o nome dele na lista `ARQ` do `sw.js`. Versão atual: **fp-v4**.
+4. **A cada atualização**, mude `V = 'fp-v5'` em `sw.js` (v6, v7...), senão o celular continua com a versão antiga. Se criar arquivo novo, coloque o nome dele na lista `ARQ` do `sw.js`. Versão atual: **fp-v5**.
 
 ## De onde vêm os números
 

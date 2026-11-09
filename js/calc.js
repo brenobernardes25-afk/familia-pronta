@@ -293,7 +293,7 @@ function calcularBugOut(s) {
       if (usaFormula) {
         const ml = mlFormulaDia(m) * dias;
         const gPo = Math.ceil((ml * B.formula.gPoPor100ml) / 100 / 10) * 10;
-        itens.push(novoItem({ id: 'formula', nome: 'Fórmula infantil em pó (confira a medida no rótulo)', qtd: gPo, unid: 'g', gUnid: 1, prio: 'essencial' }));
+        itens.push(novoItem({ id: 'formula', nome: 'Fórmula infantil em pó, em pote ou saco bem fechado (confira a medida no rótulo)', qtd: gPo, unid: 'g', gUnid: 1, prio: 'essencial' }));
         itens.push(novoItem({ id: 'aguaFormula', nome: 'Água mineral para preparar a fórmula', qtd: Math.ceil(ml / 1000), unid: 'L', gUnid: B.gPorLitroAgua, prio: 'essencial', divisivel: true }));
       }
       const pap = meses >= 6 && meses < 12 ? B.papinhasDia.find((x) => meses < x.ate) : null;
@@ -348,7 +348,7 @@ function calcularBugOut(s) {
     const nomePet = (p.nome && String(p.nome).trim()) || `${p.tipo === 'gato' ? 'Gato' : 'Cão'} ${j + 1}`;
     const kgRacao = petRacaoKgDia(p) * dias;
     const lAgua = petAguaLDia(p) * B.diasAguaNaMochila;
-    if (kgRacao) avulsos.push({ ...novoItem({ id: 'racao', nome: 'Ração em saco fechado', qtd: Math.ceil(kgRacao * 1000 / 10) * 10, unid: 'g', gUnid: 1, prio: 'essencial', divisivel: true }), de: nomePet });
+    if (kgRacao) avulsos.push({ ...novoItem({ id: 'racao', nome: 'Ração em saco bem fechado (ou pote com tampa)', qtd: Math.ceil(kgRacao * 1000 / 10) * 10, unid: 'g', gUnid: 1, prio: 'essencial', divisivel: true }), de: nomePet });
     if (lAgua) avulsos.push({ ...novoItem({ id: 'aguaPet', nome: 'Água do pet', qtd: Math.ceil(lAgua * 2) / 2, unid: 'L', gUnid: B.gPorLitroAgua, prio: 'essencial' }), de: nomePet });
     B.itensPet.forEach((it) => {
       if (it.so && it.so !== p.tipo) return;
@@ -376,8 +376,8 @@ function calcularBugOut(s) {
 
   // ---- 3. Criança/adolescente/idoso acima do limite: passa peso para um adulto com folga ----
   // Primeiro o que se divide (água, comida), depois itens inteiros (roupa, cobertor...).
-  // Documentos, remédios, óculos, apito e cartão de contato ficam sempre com a própria pessoa.
-  const FICA = ['docs', 'contatos', 'remedio', 'oculos', 'alergia', 'apito', 'manta'];
+  // Documentos, remédios, óculos, apito, cartão de contato, pulseira, forro e sacos zip ficam sempre com a própria pessoa.
+  const FICA = ['docs', 'contatos', 'remedio', 'oculos', 'alergia', 'apito', 'manta', 'pulseira', 'forro', 'zip'];
   mochilas.filter((mo) => mo.cat !== 'adulto').forEach((mo) => {
     const movem = mo.itens.filter((it) => !it.de && it.g > 0 && !FICA.includes(it.id))
       .sort((a, b) => (b.divisivel ? 1 : 0) - (a.divisivel ? 1 : 0) || b.g - a.g);

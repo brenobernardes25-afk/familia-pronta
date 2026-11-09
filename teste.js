@@ -162,6 +162,14 @@ console.log('\n=== Mochila: itens novos ===');
 confere(temItem(m('Filha'), 'pulseira') && pe.mochilas.some((mo) => temItem(mo, 'pulseira', 'Bebê')), 'pulseira de identificação para a filha e para o bebê');
 confere(temItem(m('Filha'), 'brinquedo') || pe.mochilas.some((mo) => temItem(mo, 'brinquedo', 'Filha')), 'brinquedo/livro para a criança');
 confere(temItem(m('Pai'), 'forro') && m('Pai').itens.find((it) => it.id === 'forro').prio === 'essencial', 'chuva: forro vira essencial');
+const seco = calcularBugOut({ membros: [{ nome: 'Ana', idade: 40, sexo: 'F', peso: 70, remedio: true }, { nome: 'Leo', idade: 10, sexo: 'M' }], pets: [{ tipo: 'cao', peso: 10 }],
+  bo: { modo: 'pe', clima: { calor: true }, orcamento: 'basico' } });
+confere(seco.mochilas.every((mo) => mo.itens.some((it) => it.id === 'forro' && !it.de && it.prio === 'essencial')), 'sem chuva e no orçamento básico: toda mochila vai forrada (essencial)');
+confere(seco.mochilas.every((mo) => mo.itens.some((it) => it.id === 'zip' && !it.de && it.qtd === 3)), 'cada pessoa de 5 anos+ leva 3 sacos zip na própria mochila');
+const naoMolha = ['docs', 'contatos', 'dinheiro', 'remedio', 'vacina', 'fotoPet'];
+confere(seco.mochilas.every((mo) => mo.itens.filter((it) => naoMolha.includes(it.id)).every((it) => /zip|plastific/.test(it.nome))),
+  'documentos, dinheiro, remédios, cartão e papéis do pet dizem para ir em saco zip');
+
 const comEquip = calcularBugOut({ membros: [{ nome: 'Zé', idade: 70, sexo: 'M', peso: 70, equipamento: true }], pets: [], bo: {} });
 confere(comEquip.mochilas[0].itens.some((it) => it.id === 'equip'), 'quem usa aparelho/bengala recebe o item do equipamento');
 confere(pe.mochilas.some((mo) => temItem(mo, 'fotoPet')), 'pet: foto do dono com o pet');

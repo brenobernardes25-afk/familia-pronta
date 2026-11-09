@@ -298,10 +298,10 @@ const REF = {
     // prio: essencial | importante | extra. prioClima / prioModo trocam a prioridade conforme a resposta.
     // soClima: o item só entra se um desses climas foi marcado.
     itens: [
-      { id: 'docs',     nome: 'Cópias dos documentos em saco plástico fechado (RG, CPF, certidão, cartão SUS e vacinas)', g: 60, quem: 'todos', prio: 'essencial' },
-      { id: 'contatos', nome: 'Cartão com nome, contatos da família, ponto de encontro e telefones 199/193', g: 10, quem: 'todos', prio: 'essencial' },
-      { id: 'dinheiro', nome: 'Dinheiro em espécie, notas pequenas', g: 30, quem: 'adulto', prio: 'essencial' },
-      { id: 'lanterna', nome: 'Lanterna (a de cabeça deixa as mãos livres) com pilhas reserva', g: 200, gC: 100, quem: 'cada5', prio: 'essencial' },
+      { id: 'docs',     nome: 'Cópias dos documentos (RG, CPF, certidão, cartão SUS e vacinas) em saco zip', g: 60, quem: 'todos', prio: 'essencial' },
+      { id: 'contatos', nome: 'Cartão com nome, contatos da família, ponto de encontro e telefones 199/193 (plastificado ou em saco zip)', g: 10, quem: 'todos', prio: 'essencial' },
+      { id: 'dinheiro', nome: 'Dinheiro em espécie, notas pequenas (no saco zip dos documentos)', g: 30, quem: 'adulto', prio: 'essencial' },
+      { id: 'lanterna', nome: 'Lanterna (a de cabeça deixa as mãos livres) com pilhas reserva em saco zip', g: 200, gC: 100, quem: 'cada5', prio: 'essencial' },
       { id: 'pulseira', nome: 'Pulseira ou etiqueta com nome da criança e telefone dos pais', g: 10, quem: 'menor12', prio: 'essencial' }, // cartão de identificação infantil (Broward County/Save the Children)
       { id: 'equip',    nome: 'Aparelho auditivo, bengala, andador ou outro equipamento + pilhas/carregador', g: 150, quem: 'equipamento', prio: 'essencial' }, // Ready.gov (pessoas com deficiência)
       { id: 'apito',    nome: 'Apito (para pedir socorro)', g: 10, quem: 'cada5', prio: 'essencial' },
@@ -317,20 +317,22 @@ const REF = {
       { id: 'papel',    nome: 'Papel higiênico (rolo amassado no saco plástico)', g: 100, quem: 'cada3', prio: 'importante', porDia: 'papelRoloPessoaDia', unid: 'rolo' },
       { id: 'absorv',   nome: 'Absorventes (1 pacote)', g: 100, quem: 'mulher', prio: 'essencial' },
       { id: 'mascara',  nome: 'Máscaras PFF2 (contra fumaça e poeira)', g: 20, quem: 'cada3', prio: 'importante', qtd: 2, unid: 'un.' },
-      { id: 'remedio',  nome: 'Remédios de uso contínuo para 3 dias + cópia da receita', g: 100, quem: 'remedio', prio: 'essencial' },
+      { id: 'remedio',  nome: 'Remédios de uso contínuo para 3 dias + cópia da receita, em saco zip', g: 100, quem: 'remedio', prio: 'essencial' },
       { id: 'oculos',   nome: 'Óculos reserva (pode ser o antigo) e estojo', g: 60, quem: 'oculos', prio: 'essencial' },
-      { id: 'alergia',  nome: 'Remédio da alergia receitado + cartão escrito "tenho alergia a…"', g: 50, quem: 'alergia', prio: 'essencial' },
-      { id: 'celular',  nome: 'Carregador do celular + power bank carregado', g: 300, quem: 'adulto', prio: 'importante' },
+      { id: 'alergia',  nome: 'Remédio da alergia receitado + cartão escrito "tenho alergia a…", em saco zip', g: 50, quem: 'alergia', prio: 'essencial' },
+      { id: 'celular',  nome: 'Carregador do celular + power bank carregado, em saco zip', g: 300, quem: 'adulto', prio: 'importante' },
       { id: 'canivete', nome: 'Canivete ou alicate multiuso', g: 150, quem: 'adulto', prio: 'importante' },
       { id: 'toalha',   nome: 'Toalha pequena de secagem rápida', g: 150, gC: 80, quem: 'cada3', prio: 'importante' },
       { id: 'chinelo',  nome: 'Chinelo (banho em abrigo)', g: 200, gC: 100, quem: 'cada3', prio: 'importante' },
       { id: 'brinquedo',nome: 'Brinquedo pequeno, livro, baralho ou lápis de cor', g: 150, quem: 'crianca', prio: 'importante' }, // Ready.gov Kids
-      { id: 'forro',    nome: 'Saco de lixo grande forrando a mochila por dentro (tudo seco)', g: 40, quem: 'cada5', prio: 'importante', prioClima: { chuva: 'essencial' } },
+      // Enchente e chuva são as crises mais comuns no Brasil: a mochila inteira vai forrada e o que não pode molhar vai em saco zip.
+      { id: 'forro',    nome: 'Saco de lixo grande forrando a mochila por dentro (deixa tudo seco)', g: 40, quem: 'cada3', prio: 'essencial' },
+      { id: 'zip',      nome: 'Sacos zip: documentos e dinheiro, remédios, celular e carregador', g: 10, qtd: 3, unid: 'un.', quem: 'cada5', prio: 'essencial' },
       { id: 'oculosSol',nome: 'Óculos de sol', g: 30, quem: 'cada5', prio: 'extra', prioClima: { calor: 'importante' } },
       { id: 'tampao',   nome: 'Protetor de ouvido e máscara de dormir (abrigo coletivo)', g: 20, quem: 'cada5', prio: 'extra' },
       { id: 'luvasTrab',nome: 'Luvas de trabalho (entulho, galhos, vidro)', g: 150, quem: 'adulto', prio: 'extra' },
       // Um por família
-      { id: 'kit',      nome: 'Kit de primeiros socorros', g: 400, quem: 'familia', prio: 'essencial' },
+      { id: 'kit',      nome: 'Kit de primeiros socorros (em bolsa fechada ou saco zip)', g: 400, quem: 'familia', prio: 'essencial' },
       { id: 'alcool',   nome: 'Álcool em gel 70%', g: 80, quem: 'familia', prio: 'essencial' },
       { id: 'sanitaria',nome: 'Água sanitária sem perfume em frasco conta-gotas (2 gotas/litro, esperar 30 min)', g: 60, quem: 'familia', prio: 'essencial' },
       { id: 'garrafa',  nome: 'Garrafa vazia de 2 L para encher e tratar água no caminho', g: 50, quem: 'cada5', prio: 'essencial' },
@@ -342,7 +344,7 @@ const REF = {
       { id: 'lixo',     nome: 'Sacos de lixo e lacres', g: 80, quem: 'familia', prio: 'importante' },
       { id: 'radio',    nome: 'Rádio a pilha ou manivela', g: 300, quem: 'familia', prio: 'importante' },
       { id: 'isqueiro', nome: 'Isqueiro e fósforo em saco plástico', g: 30, quem: 'familia', prio: 'importante' },
-      { id: 'mapa',     nome: 'Mapa de papel da região (GPS pode cair)', g: 50, quem: 'familia', prio: 'importante' },
+      { id: 'mapa',     nome: 'Mapa de papel da região (GPS pode cair), em saco zip', g: 50, quem: 'familia', prio: 'importante' },
       { id: 'abridor',  nome: 'Abridor de lata manual', g: 50, quem: 'familia', prio: 'extra' },
       { id: 'filtro',   nome: 'Filtro de água portátil', g: 100, quem: 'familia', prio: 'extra', prioModo: { pe: 'importante' } },
       { id: 'fita',     nome: 'Fita adesiva tipo silver tape', g: 150, quem: 'familia', prio: 'extra' },
@@ -352,7 +354,7 @@ const REF = {
       { id: 'semReceita', nome: 'Remédios sem receita: dor/febre, diarreia, antialérgico', g: 80, quem: 'familia', prio: 'importante' }, // Ready.gov
       { id: 'luvasDesc',nome: 'Luvas descartáveis (2 pares)', g: 20, quem: 'familia', prio: 'importante' },
       { id: 'pastilhas',nome: 'Pastilhas para purificar água (farmácia)', g: 20, quem: 'familia', prio: 'importante' }, // Ready.gov
-      { id: 'zip',      nome: 'Sacos plásticos tipo zip (documentos, celular, roupa molhada)', g: 30, quem: 'familia', prio: 'importante' },
+      { id: 'zipExtra', nome: 'Sacos zip grandes a mais (roupa molhada, roupa suja)', g: 30, quem: 'familia', prio: 'importante' },
       { id: 'chaves',   nome: 'Chave reserva de casa (e do carro)', g: 50, quem: 'familia', prio: 'importante' },
       { id: 'cabo',     nome: 'Cabo de carregador extra', g: 40, quem: 'familia', prio: 'extra' },
       { id: 'caneca',   nome: 'Caneca de metal (ferver água) e colher', g: 150, quem: 'familia', prio: 'extra' },
@@ -376,8 +378,8 @@ const REF = {
     // do pet para pelo menos 3 dias, separada da água da família. Pesos: ESTIMATIVA (peso de produto).
     itensPet: [
       { id: 'coleira',  nome: 'Coleira com plaquinha (nome + telefone) e guia', g: 150, prio: 'essencial', noCorpo: true },
-      { id: 'vacina',   nome: 'Cópia da carteira de vacinação', g: 10, prio: 'essencial' },
-      { id: 'fotoPet',  nome: 'Foto recente sua junto com o pet (prova que é seu se ele se perder)', g: 5, prio: 'essencial' }, // Ready.gov Pets
+      { id: 'vacina',   nome: 'Cópia da carteira de vacinação do pet, em saco zip', g: 10, prio: 'essencial' },
+      { id: 'fotoPet',  nome: 'Foto recente sua junto com o pet (prova que é seu se ele se perder), em saco zip', g: 5, prio: 'essencial' }, // Ready.gov Pets
       { id: 'caixa',    nome: 'Caixa de transporte', g: 1500, prio: 'essencial', so: 'gato', noCorpo: true },
       { id: 'caixaP',   nome: 'Caixa de transporte (cão pequeno)', g: 1500, prio: 'importante', so: 'cao', ateKg: 10, noCorpo: true },
       { id: 'pote',     nome: 'Pote dobrável', g: 80, prio: 'importante' },
