@@ -103,3 +103,8 @@ details.cartao summary{cursor:pointer;font-weight:600}
 .botao-arquivo{display:block;text-align:center;cursor:pointer;border-radius:12px;border:1px solid var(--bd);background:var(--card);padding:.7em 1em;margin-top:.5em}
 .botao-arquivo:focus-within{outline:3px solid var(--ac);outline-offset:2px}
 @media print{.instalar,.tag{display:none}}
+.aviso-legal{font-size:.78rem;color:var(--mut);border-top:1px solid var(--bd);padding-top:.8em;margin-top:1.5em;line-height:1.4}
+.lista .ja{font-style:normal;color:var(--ac);font-size:.85rem}
+/* contraste maior na etiqueta "essencial" (texto pequeno precisa de 4,5:1) */
+.tag.essencial{border-color:#a8431f;color:#a8431f}
+@media (prefers-color-scheme:dark){.tag.essencial{border-color:#f0a07e;color:#f0a07e}.lista .ja{color:#f0a07e}}

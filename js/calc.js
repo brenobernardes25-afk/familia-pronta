@@ -60,7 +60,8 @@ function calcularBugIn(s) {
   if (kcalDia) limites.push({ fator: 'Comida', dias: kcalCasa / kcalDia });
   if (fraldas) limites.push({ fator: 'Fraldas', dias: num(e.fraldas) / fraldas });
   if (racaoDia) limites.push({ fator: 'Ração dos pets', dias: num(e.racaoKg) / racaoDia });
-  if (s.temRemedio) limites.push({ fator: 'Remédio de uso contínuo', dias: num(e.remedioDias) });
+  const temRemedio = s.temRemedio || membros.some((m) => m.remedio); // marcado aqui ou no "Sair de casa"
+  if (temRemedio) limites.push({ fator: 'Remédio de uso contínuo', dias: num(e.remedioDias) });
 
   const pior = limites.reduce((a, b) => (b.dias < a.dias ? b : a), { fator: '-', dias: Infinity });
   const dias = Number.isFinite(pior.dias) ? Math.floor(pior.dias) : 0;
@@ -79,7 +80,8 @@ function calcularBugIn(s) {
 
   // Reserva de 3 dias de comida que não precisa cozinhar (Ready.gov: comida pronta, sem geladeira nem fogão)
   const semFogao = {};
-  membros.forEach((m) => comidaLeve(m, REF.bugout.dias).forEach(({ c, n }) => { semFogao[c.id] = (semFogao[c.id] || 0) + n; }));
+  const semAmendoimCasa = membros.some((m) => m.alergiaAmendoim);
+  membros.forEach((m) => comidaLeve(m, REF.bugout.dias, semAmendoimCasa).forEach(({ c, n }) => { semFogao[c.id] = (semFogao[c.id] || 0) + n; }));
   REF.bugout.comida.forEach((c) => add(`semFogao-${c.id}`, 'comida', `Sem fogão (reserva de 3 dias): ${c.nome}`, semFogao[c.id] || 0, c.unid, 'importante'));
 
   // Bebê e pets
@@ -93,7 +95,7 @@ function calcularBugIn(s) {
   });
   add('racao', 'pets', 'Ração', Math.max(0, Math.ceil(racaoDia * meta - num(e.racaoKg))), 'kg', 'essencial');
 
-  if (s.temRemedio && num(e.remedioDias) < meta)
+  if (temRemedio && num(e.remedioDias) < meta)
     add('remedio', 'saude', 'Remédio de uso contínuo (fale com o médico e leve a receita)', meta - num(e.remedioDias), 'dias a mais', 'essencial');
 
   add('papel', 'higiene', 'Papel higiênico', Math.ceil(membros.length * REF.papelRoloPessoaDia * meta), 'rolos', 'importante');
@@ -186,11 +188,12 @@ function aguaBebidaLDia(m) {
 
 // Comida leve e calórica para N dias (a partir de 12 meses): arredonda para baixo
 // e completa com o item mais em falta até bater as calorias. Retorna [{ c, n }].
-function comidaLeve(m, dias) {
+// semAmendoim: alguém da família tem alergia a amendoim → ninguém leva (evita contato).
+function comidaLeve(m, dias, semAmendoim) {
   const meses = mesesDe(m);
   if (meses < 12) return [];
   const kcal = kcalMembro(m) * dias;
-  const lista = REF.bugout.comida.filter((c) => !c.minMeses || meses >= c.minMeses);
+  const lista = REF.bugout.comida.filter((c) => (!c.minMeses || meses >= c.minMeses) && !(semAmendoim && c.alergeno === 'amendoim'));
   const soma = lista.reduce((a, c) => a + c.pct, 0);
   const alvo = lista.map((c) => (kcal * c.pct) / soma);
   const ns = lista.map((c, k) => Math.floor(alvo[k] / c.kcal));
@@ -260,6 +263,7 @@ function calcularBugOut(s) {
   const ok = (p) => p && permitidas.includes(p);
   const nomeDe = (m, i) => (m.nome && String(m.nome).trim()) || `Pessoa ${i + 1}`;
   const temLactante = membros.some((m) => m.lactante);
+  const semAmendoim = membros.some((m) => m.alergiaAmendoim);
 
   // ---- 1. Itens de cada pessoa ----
   const porPessoa = membros.map((m, i) => {
@@ -274,7 +278,7 @@ function calcularBugOut(s) {
       qtd: litros, unid: 'L', gUnid: B.gPorLitroAgua, prio: 'essencial', divisivel: true }));
 
     // Comida leve (a partir de 12 meses)
-    comidaLeve(m, dias).forEach(({ c, n }) =>
+    comidaLeve(m, dias, semAmendoim).forEach(({ c, n }) =>
       itens.push(novoItem({ id: c.id, nome: c.nome, qtd: n, unid: c.unid, gUnid: c.g, prio: 'essencial', divisivel: true })));
 
     // Checklist geral
@@ -293,7 +297,7 @@ function calcularBugOut(s) {
       if (usaFormula) {
         const ml = mlFormulaDia(m) * dias;
         const gPo = Math.ceil((ml * B.formula.gPoPor100ml) / 100 / 10) * 10;
-        itens.push(novoItem({ id: 'formula', nome: 'Fórmula infantil em pó, em pote ou saco bem fechado (confira a medida no rótulo)', qtd: gPo, unid: 'g', gUnid: 1, prio: 'essencial' }));
+        itens.push(novoItem({ id: 'formula', nome: 'Fórmula infantil (de preferência a líquida pronta; se for em pó: pote bem fechado e a medida do rótulo)', qtd: gPo, unid: 'g', gUnid: 1, prio: 'essencial' }));
         itens.push(novoItem({ id: 'aguaFormula', nome: 'Água mineral para preparar a fórmula', qtd: Math.ceil(ml / 1000), unid: 'L', gUnid: B.gPorLitroAgua, prio: 'essencial', divisivel: true }));
       }
       const pap = meses >= 6 && meses < 12 ? B.papinhasDia.find((x) => meses < x.ate) : null;
@@ -428,8 +432,11 @@ function calcularBugOut(s) {
     avisos.push(`${mo.nome} está gestante: não achamos limite oficial de carga na gravidez. Leve o mínimo e passe o peso para outro adulto.`));
   if (temLactante && membros.some((m) => mesesDe(m) < 12))
     avisos.push('Bebê mamando no peito: continue amamentando. Na emergência, o leite materno é o alimento mais seguro (OMS/UNICEF).');
-  if (bo.clima && bo.clima.calor) avisos.push('No calor, beba antes de sentir sede e descanse na sombra. Água de rio só depois de tratar.');
-  if (dias > B.diasAguaNaMochila) avisos.push(`A mochila leva ${B.diasAguaNaMochila} dia de água; mais que isso passa do peso que dá para carregar. Para os outros dias, encha a garrafa no caminho e trate: ${REF.hipocloritoGotasPorLitro} gotas de água sanitária por litro, espere 30 minutos.`);
+  if (semAmendoim) avisos.push('Alergia a amendoim na família: a mochila de ninguém leva amendoim (evita contato). A comida foi trocada por biscoito e sardinha.');
+  if (membros.some((m) => m.alergia)) avisos.push('Quem tem alergia grave: confira o rótulo de TODA a comida da mochila (biscoito tem trigo e leite, sardinha é peixe) e leve o remédio de emergência receitado sempre junto da pessoa, nunca na mochila de outro.');
+  if (!temLactante && membros.some((m) => mesesDe(m) < 12)) avisos.push('Bebê na fórmula: em emergência, a OMS recomenda fórmula líquida pronta, que não depende de água limpa. Se usar pó, prepare com água fervida (ou mineral) e mamadeira bem lavada; jogue fora o que sobrar em 2 horas.');
+  if (bo.clima && bo.clima.calor) avisos.push('No calor, beba antes de sentir sede e descanse na sombra. Água de rio só depois de coar e tratar.');
+  if (dias > B.diasAguaNaMochila) avisos.push(`A mochila leva ${B.diasAguaNaMochila} dia de água; mais que isso passa do peso que dá para carregar. Para os outros dias, encha a garrafa no caminho e trate. ${REF.tratarAgua}`);
   mochilas.filter((mo) => mo.passou).forEach((mo) => {
     const kgTxt = (mo.excessoG / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
     avisos.push(mo.cat === 'adulto'

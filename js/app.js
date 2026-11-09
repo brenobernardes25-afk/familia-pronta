@@ -22,19 +22,67 @@ const inicial = () => ({
   plano: planoVazio(),
 });
 
+// ---------- Limpeza dos dados ----------
+// Tudo que vem do celular ou de um arquivo de cópia passa por aqui: cada campo vira o tipo certo,
+// dentro de limites. Um arquivo estragado ou adulterado não derruba o app nem injeta código.
+const TELAS_OK = ['home', 'bugin', 'resultado', 'bugout', 'boResultado', 'plano', 'planoImprimir', 'instalar', 'dados'];
+const txtOk = (v, max = 300) => (typeof v === 'string' ? v : typeof v === 'number' ? String(v) : '').slice(0, max);
+const numOk = (v, min, max) => {
+  if (v === '' || v == null) return '';
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : '';
+};
+const simOk = (v) => v === true;
+const objOk = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+const marcas = (o) => Object.fromEntries(Object.entries(objOk(o)).slice(0, 2000)
+  .filter(([, v]) => typeof v === 'boolean' || (typeof v === 'number' && Number.isFinite(v))).map(([k, v]) => [k.slice(0, 200), v]));
+
+function limpaEstado(d) {
+  const base = inicial();
+  if (!d || typeof d !== 'object' || Array.isArray(d)) return base;
+  const membros = (Array.isArray(d.membros) ? d.membros : base.membros).filter((m) => m && typeof m === 'object').slice(0, 30)
+    .map((m) => ({
+      id: txtOk(m.id, 20).replace(/[^\w-]/g, '') || novoId(), nome: txtOk(m.nome, 60),
+      idade: numOk(m.idade, 0, 120), meses: numOk(m.meses, 0, 11), sexo: m.sexo === 'F' ? 'F' : 'M',
+      peso: numOk(m.peso, 0, 300), pesoCrianca: numOk(m.pesoCrianca, 0, 200),
+      gestante: simOk(m.gestante), lactante: simOk(m.lactante), remedio: simOk(m.remedio), oculos: simOk(m.oculos),
+      alergia: simOk(m.alergia), alergiaAmendoim: simOk(m.alergiaAmendoim), equipamento: simOk(m.equipamento),
+      sangue: REF.plano.sangue.includes(m.sangue) ? m.sangue : '', tel: txtOk(m.tel, 30),
+      alergiasTxt: txtOk(m.alergiasTxt), remediosTxt: txtOk(m.remediosTxt), saudeTxt: txtOk(m.saudeTxt),
+    }));
+  const pets = (Array.isArray(d.pets) ? d.pets : []).filter((p) => p && typeof p === 'object').slice(0, 20)
+    .map((p) => ({ id: txtOk(p.id, 20).replace(/[^\w-]/g, '') || novoId(), nome: txtOk(p.nome, 40), tipo: p.tipo === 'gato' ? 'gato' : 'cao', peso: numOk(p.peso, 0, 100) }));
+  const e = objOk(d.estoque);
+  const estoque = Object.fromEntries(Object.keys(base.estoque).map((k) => [k, numOk(e[k], 0, 100000)]));
+  const bo = objOk(d.bo); const clima = objOk(bo.clima);
+  const pl = objOk(d.plano); const cf = objOk(pl.contatoFora);
+  const u = objOk(d.ultimo);
+  return {
+    ...base,
+    tela: TELAS_OK.includes(d.tela) ? d.tela : 'home',
+    membros, pets, estoque,
+    temRemedio: simOk(d.temRemedio),
+    basicos: marcas(d.basicos),
+    meta: [3, 7, 14, 30].includes(d.meta) ? d.meta : 14,
+    riscados: marcas(d.riscados),
+    riscadosBO: marcas(d.riscadosBO),
+    filtroLista: d.filtroLista === 'essencial' ? 'essencial' : 'tudo',
+    ultimo: d.ultimo ? { dias: numOk(u.dias, 0, 100000) || 0, nota: numOk(u.nota, 0, 10) || 0 } : null,
+    bo: { modo: bo.modo === 'carro' ? 'carro' : 'pe', clima: { calor: simOk(clima.calor), frio: simOk(clima.frio), chuva: simOk(clima.chuva) },
+      orcamento: ['basico', 'medio', 'completo'].includes(bo.orcamento) ? bo.orcamento : 'medio' },
+    boMontadaEm: typeof d.boMontadaEm === 'string' && !Number.isNaN(Date.parse(d.boMontadaEm)) ? d.boMontadaEm : null,
+    plano: {
+      endereco: txtOk(pl.endereco), encontroPerto: txtOk(pl.encontroPerto), encontroLonge: txtOk(pl.encontroLonge),
+      destino: txtOk(pl.destino), lugares: txtOk(pl.lugares, 2000), veterinario: txtOk(pl.veterinario),
+      contatoFora: { nome: txtOk(cf.nome, 60), tel: txtOk(cf.tel, 30) },
+      contatos: (Array.isArray(pl.contatos) ? pl.contatos : []).filter((c) => c && typeof c === 'object').slice(0, 30)
+        .map((c) => ({ nome: txtOk(c.nome, 60), tel: txtOk(c.tel, 30), rel: txtOk(c.rel, 60) })),
+    },
+  };
+}
+
 let S;
-try { S = { ...inicial(), ...JSON.parse(localStorage.getItem(CHAVE) || '{}') }; } catch { S = inicial(); }
-// Migração de dados salvos por versões antigas
-S.bo = { ...inicial().bo, ...(S.bo || {}) };
-S.bo.clima = S.bo.clima || {};
-S.riscadosBO = S.riscadosBO || {};
-S.plano = { ...planoVazio(), ...(S.plano || {}) };
-S.plano.contatoFora = { nome: '', tel: '', ...(S.plano.contatoFora || {}) };
-S.plano.contatos = S.plano.contatos || [];
-S.membros = Array.isArray(S.membros) ? S.membros : [];
-S.pets = Array.isArray(S.pets) ? S.pets : [];
-S.membros.forEach((m) => { if (!m.id) m.id = novoId(); });
-S.pets.forEach((p) => { if (!p.id) p.id = novoId(); });
+try { S = limpaEstado(JSON.parse(localStorage.getItem(CHAVE) || 'null')); } catch { S = inicial(); }
 
 const salvar = () => { try { localStorage.setItem(CHAVE, JSON.stringify(S)); } catch {} };
 salvar();
@@ -45,7 +93,7 @@ const ir = (tela) => { S.tela = tela; salvar(); render(); window.scrollTo(0, 0);
 // ---------- helpers ----------
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const num = (path, val, rot, extra = '') =>
-  `<label class="campo"><span>${rot}</span><input type="number" inputmode="decimal" min="0" data-p="${path}" value="${val ?? ''}" ${extra}></label>`;
+  `<label class="campo"><span>${rot}</span><input type="number" inputmode="decimal" min="0" step="any" data-p="${path}" value="${esc(val)}" ${extra}></label>`;
 const txt = (path, val, rot, extra = '') =>
   `<label class="campo"><span>${rot}</span><input type="text" data-p="${path}" value="${esc(val)}" ${extra}></label>`;
 const kgTxt = (g) => (g / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' kg';
@@ -194,8 +242,9 @@ function importar(arquivo) {
   leitor.onload = () => {
     try {
       const j = JSON.parse(leitor.result);
-      const d = j && j.app === 'familia-pronta' ? j.dados : j;
-      if (!d || !Array.isArray(d.membros)) throw new Error('formato');
+      const bruto = j && j.app === 'familia-pronta' ? j.dados : j;
+      if (!bruto || !Array.isArray(bruto.membros)) throw new Error('formato');
+      const d = limpaEstado(bruto);
       if (!confirm(`Restaurar a cópia com ${d.membros.length} pessoa(s)? O que está no celular agora será substituído.`)) return;
       localStorage.setItem(CHAVE, JSON.stringify({ ...d, tela: 'home' }));
       location.reload();
@@ -204,14 +253,20 @@ function importar(arquivo) {
   leitor.readAsText(arquivo);
 }
 
+// Item marcado: guarda a quantidade que a pessoa tinha quando marcou. Se a lista pedir mais
+// (mudou a meta, entrou alguém na família), volta a aparecer desmarcado com "você marcou X".
+const marcado = (v, qtd) => v === true || (typeof v === 'number' && v >= qtd);
+const marcouMenos = (v, qtd) => typeof v === 'number' && v > 0 && v < qtd
+  ? ` <em class="ja">(você marcou ${v}; agora são ${qtd})</em>` : '';
+
 // ---------- TELA INICIAL ----------
 function resumoMochilas() {
   if (!S.membros.length) return '';
   const r = calcularBugOut(S);
-  const chaves = [];
-  r.mochilas.forEach((mo) => mo.itens.forEach((it) => chaves.push(chaveBO(mo, it))));
-  const prontos = chaves.filter((k) => S.riscadosBO[k]).length;
-  return prontos ? `${prontos} de ${chaves.length} itens prontos` : '';
+  const itens = [];
+  r.mochilas.forEach((mo) => mo.itens.forEach((it) => itens.push([chaveBO(mo, it), it.qtd])));
+  const prontos = itens.filter(([k, q]) => marcado(S.riscadosBO[k], q)).length;
+  return prontos ? `${prontos} de ${itens.length} itens prontos` : '';
 }
 
 function telaHome() {
@@ -233,7 +288,8 @@ function telaHome() {
   <button class="porta" data-ir="plano">
     <strong>📋 Plano da família</strong><span>Contatos, ponto de encontro e tipo sanguíneo para colar na geladeira.</span></button>
   <p class="rodape"><button class="link" data-ir="dados">💾 Meus dados</button> · <button class="link" data-ir="instalar">📲 Instalar</button><br>
-    Grátis e de código aberto · @breno.paiva40</p>`;
+    Grátis e de código aberto · @breno.paiva40</p>
+  ${avisoLegal()}`;
 }
 
 // ---------- FAMÍLIA (a mesma nas três telas) ----------
@@ -274,6 +330,7 @@ function telaMembro(m, i, modo) {
       <label><input type="checkbox" data-p="membros.${i}.remedio" ${m.remedio ? 'checked' : ''}> Remédio contínuo</label>
       <label><input type="checkbox" data-p="membros.${i}.oculos" ${m.oculos ? 'checked' : ''}> Usa óculos</label>
       <label><input type="checkbox" data-p="membros.${i}.alergia" ${m.alergia ? 'checked' : ''}> Alergia grave</label>
+      <label><input type="checkbox" data-p="membros.${i}.alergiaAmendoim" ${m.alergiaAmendoim ? 'checked' : ''}> Alergia a amendoim ou castanha</label>
       <label><input type="checkbox" data-p="membros.${i}.equipamento" ${m.equipamento ? 'checked' : ''}> Usa aparelho, bengala ou cadeira</label></div>` : ''}
     ${saude}
   </div>`;
@@ -315,8 +372,13 @@ function telaBugIn() {
     ${temBebe ? num('estoque.fraldas', e.fraldas, 'Fraldas (unid.)', 'max="10000"') : ''}
     ${S.pets.length ? num('estoque.racaoKg', e.racaoKg, 'Ração (kg)', 'max="10000"') : ''}
   </div>
-  <div class="checks"><label><input type="checkbox" data-p="temRemedio" data-re ${S.temRemedio ? 'checked' : ''}> Alguém usa remédio contínuo</label></div>
-  ${S.temRemedio ? num('estoque.remedioDias', e.remedioDias, 'Remédio dá para quantos dias?', 'max="3650"') : ''}
+  ${(() => {
+    const quem = S.membros.filter((m) => m.remedio).map((m) => esc(nomePessoa(m, S.membros.indexOf(m))));
+    const tem = S.temRemedio || quem.length > 0;
+    return `<div class="checks"><label><input type="checkbox" data-p="temRemedio" data-re ${tem ? 'checked' : ''} ${quem.length ? 'disabled' : ''}> Alguém usa remédio contínuo</label></div>
+    ${quem.length ? `<p class="obs mini">Marcado no "Sair de casa": ${quem.join(', ')}.</p>` : ''}
+    ${tem ? num('estoque.remedioDias', e.remedioDias, 'Remédio dá para quantos dias?', 'max="3650"') : ''}`;
+  })()}
 
   <h3>3. Você já tem…</h3>
   <div class="checks col">${REF.basicos.map((b) =>
@@ -330,8 +392,9 @@ function telaBugIn() {
   ${S.membros.length ? '' : '<p class="obs">Cadastre pelo menos uma pessoa.</p>'}`;
 }
 
+const avisoLegal = () => `<p class="aviso-legal">⚠️ ${REF.aviso}</p>`;
 const fontesHtml = () =>
-  `<details class="fontes"><summary>Fontes dos números</summary><ul>${REF.fontes.map((f) => `<li>${f}</li>`).join('')}</ul></details>`;
+  `${avisoLegal()}<details class="fontes"><summary>Fontes dos números</summary><ul>${REF.fontes.map((f) => `<li>${f}</li>`).join('')}</ul></details>`;
 
 function telaResultado() {
   if (!S.membros.length) return telaBugIn();
@@ -354,19 +417,19 @@ function telaResultado() {
   ${(() => {
     const visiveis = r.lista.filter((x) => (S.filtroLista || 'tudo') === 'tudo' || x.prioridade === 'essencial');
     if (!visiveis.length) return '<p>Você já está pronto para essa meta. 💪</p>';
-    const prontos = visiveis.filter((x) => S.riscados[x.id]).length;
+    const prontos = visiveis.filter((x) => marcado(S.riscados[x.id], x.qtd)).length;
     return `<p class="progresso"><b>${prontos}</b> de ${visiveis.length} itens prontos</p>` + Object.keys(REF.categorias).map((cat) => {
       const itens = visiveis.filter((x) => x.cat === cat).sort((a, b) => grupos.indexOf(a.prioridade) - grupos.indexOf(b.prioridade));
       return itens.length ? `<h4>${REF.categorias[cat]}</h4><ul class="lista">${itens.map((x) => {
-        const ok = S.riscados[x.id];
-        return `<li class="${ok ? 'ok' : ''}"><label><input type="checkbox" data-risca="${esc(x.id)}" ${ok ? 'checked' : ''}>
-          <span>${x.qtd > 1 || x.unid ? `<b>${x.qtd}</b> ${unidade(x.qtd, x.unid)} — ` : ''}${esc(x.nome)}</span>
+        const ok = marcado(S.riscados[x.id], x.qtd);
+        return `<li class="${ok ? 'ok' : ''}"><label><input type="checkbox" data-risca="${esc(x.id)}" data-qtd="${x.qtd}" ${ok ? 'checked' : ''}>
+          <span>${x.qtd > 1 || x.unid ? `<b>${x.qtd}</b> ${unidade(x.qtd, x.unid)} — ` : ''}${esc(x.nome)}${marcouMenos(S.riscados[x.id], x.qtd)}</span>
           <small class="tag ${x.prioridade}">${x.prioridade}</small></label></li>`;
       }).join('')}</ul>` : '';
     }).join('');
   })()}
 
-  <div class="dica"><b>Ficou sem água potável?</b> ${REF.hipocloritoGotasPorLitro} gotas de água sanitária (hipoclorito 2,5%, sem perfume) por litro, espere 30 minutos.</div>
+  <div class="dica"><b>Ficou sem água potável?</b> ${REF.tratarAgua}</div>
 
   ${avisoInstalar()}
   <div class="acoes no-print">
@@ -410,12 +473,12 @@ function telaBugOut() {
 const chaveBO = (mo, it) => `${(S.membros[mo.idx] || {}).id || mo.idx}|${it.id}|${it.de || ''}`;
 
 function itemBO(it, chave) {
-  const ok = S.riscadosBO[chave];
+  const ok = marcado(S.riscadosBO[chave], it.qtd);
   const qtd = it.qtd > 1 || it.unid ? `<b>${it.qtd}</b> ${unidade(it.qtd, it.unid)} — ` : '';
   const de = it.de ? ` <em class="de">${it.de === 'família' ? 'da família' : 'de ' + esc(it.de)}</em>` : '';
   const peso = it.noCorpo ? 'vai no corpo' : it.g ? '~' + gTxt(it.g) : '';
-  return `<li class="${ok ? 'ok' : ''}"><label><input type="checkbox" data-riscabo="${esc(chave)}" ${ok ? 'checked' : ''}>
-    <span>${qtd}${esc(it.nome)}${de}</span><small class="g">${peso}</small></label></li>`;
+  return `<li class="${ok ? 'ok' : ''}"><label><input type="checkbox" data-riscabo="${esc(chave)}" data-qtd="${it.qtd}" ${ok ? 'checked' : ''}>
+    <span>${qtd}${esc(it.nome)}${de}${marcouMenos(S.riscadosBO[chave], it.qtd)}</span><small class="g">${peso}</small></label></li>`;
 }
 
 function listaPorPrioridade(itens, chave) {
@@ -567,9 +630,10 @@ function telaPlanoImprimir() {
     ${p.lugares ? `<section class="bloco"><h3>Durante o dia</h3><p>${esc(p.lugares).replace(/\n/g, '<br>')}</p></section>` : ''}
 
     <section class="bloco dica">
-      <b>Sem água potável?</b> ${REF.hipocloritoGotasPorLitro} gotas de água sanitária (sem perfume) por litro, espere 30 min.
+      <b>Sem água potável?</b> ${REF.tratarAgua}
       <b>Mochilas</b> perto da porta, revisar a cada ${P.revisarMeses} meses.
     </section>
+    ${avisoLegal()}
   </article>
 
   <h3 class="quebra">Cartões de bolso <small>(recorte na linha e guarde na carteira e na mochila)</small></h3>
@@ -598,7 +662,19 @@ function render() {
   // Guarda o foco (para não perder o campo ao redesenhar a tela)
   const a = document.activeElement;
   const foco = a && $app.contains(a) ? (a.dataset.p ? `[data-p="${a.dataset.p}"]` : a.dataset.riscabo ? `[data-riscabo="${CSS.escape(a.dataset.riscabo)}"]` : null) : null;
-  $app.innerHTML = (TELAS[S.tela] || telaHome)();
+  try {
+    $app.innerHTML = (TELAS[S.tela] || telaHome)();
+  } catch (erro) {
+    // Tela de socorro: nunca deixa a pessoa com a tela em branco
+    console.warn('Família Pronta: erro ao montar a tela', erro);
+    $app.innerHTML = `<h2>Algo deu errado nesta tela</h2>
+      <p class="obs">Seus dados continuam guardados. Tente voltar ao início. Se continuar, salve uma cópia e, se precisar, apague os dados deste celular.</p>
+      <div class="acoes"><button class="pri" data-ir="home">Voltar ao início</button>
+      <button class="sec" data-exportar>Salvar uma cópia dos dados</button>
+      <button class="sec discreto" data-apagar>Apagar os dados deste celular</button></div>`;
+    if (S.tela !== 'home') S.tela = 'home';
+    return;
+  }
   document.title = { home: 'Família Pronta', plano: 'Plano da família · Família Pronta', planoImprimir: 'Plano da família · Família Pronta',
     bugout: 'Sair de casa · Família Pronta', boResultado: 'Mochilas 72h · Família Pronta', instalar: 'Instalar · Família Pronta',
     dados: 'Meus dados · Família Pronta' }[S.tela] || 'Ficar em casa · Família Pronta';
@@ -623,14 +699,14 @@ $app.addEventListener('input', (ev) => {
 $app.addEventListener('change', (ev) => {
   const t = ev.target;
   if (t.dataset.risca) {
-    S.riscados[t.dataset.risca] = t.checked; salvar(); t.closest('li').classList.toggle('ok', t.checked);
+    S.riscados[t.dataset.risca] = t.checked ? (Number(t.dataset.qtd) || true) : false; salvar(); t.closest('li').classList.toggle('ok', t.checked);
     const b = $app.querySelector('.progresso b');
     if (b) b.textContent = $app.querySelectorAll('[data-risca]:checked').length;
     return;
   }
   if (t.dataset.importar !== undefined) { if (t.files[0]) importar(t.files[0]); t.value = ''; return; }
   if (t.dataset.riscabo) {
-    S.riscadosBO[t.dataset.riscabo] = t.checked; salvar();
+    S.riscadosBO[t.dataset.riscabo] = t.checked ? (Number(t.dataset.qtd) || true) : false; salvar();
     t.closest('li').classList.toggle('ok', t.checked); // sem redesenhar: mantém a rolagem
     return;
   }

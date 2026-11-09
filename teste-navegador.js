@@ -254,7 +254,43 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     await js(`(() => { const d = JSON.parse(localStorage.getItem('familia-pronta-v1')); d.membros.pop(); localStorage.setItem('familia-pronta-v1', JSON.stringify(d)); return true; })()`);
     await recarrega();
 
-    // ---------------- 8. Sem internet ----------------
+    // ---------------- 8. Segurança e consertos da revisão ----------------
+    console.log('\n8. Segurança e consertos da revisão');
+    const guardado = await js(`localStorage.getItem('familia-pronta-v1')`);
+    // Arquivo de cópia adulterado tentando injetar código e com lixo no meio
+    await clica('[data-ir="dados"]');
+    await js(`(() => {
+      const ruim = { app: 'familia-pronta', dados: { tela: '<script>', membros: [null, 5, { nome: '<img src=x onerror="window.__xss=1">', idade: '"><img src=x onerror="window.__xss=2">', peso: 'abc', sexo: 'X' }],
+        pets: 'nada', plano: 'texto', riscados: [1, 2], bo: { modo: 'avião', orcamento: 'rico' } } };
+      const dt = new DataTransfer(); dt.items.add(new File([JSON.stringify(ruim)], 'ruim.json'));
+      const inp = document.querySelector('[data-importar]'); inp.files = dt.files; inp.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`);
+    await cdp.quando('Page.loadEventFired'); await espera(200);
+    confere((await js(`document.querySelectorAll('.porta').length`)) === 3, 'cópia adulterada: o app continua abrindo');
+    await clica('[data-ir="bugout"]');
+    confere(!(await js(`!!window.__xss`)) && (await js(`document.querySelector('[data-p="membros.0.nome"]').value`)).includes('<img'),
+      'cópia adulterada: o texto aparece como texto, nenhum código roda');
+    const limpo = await estado();
+    confere(limpo.membros.length === 1 && limpo.membros[0].idade === '' && limpo.membros[0].sexo === 'M' && limpo.bo.modo === 'pe', 'cópia adulterada: campos estranhos viram valores seguros');
+    // Dados estragados direto no celular
+    await js(`localStorage.setItem('familia-pronta-v1', '{"membros":[null,{"nome":7,"idade":"x"}],"plano":{"contatos":[null]},"tela":"resultado"}')`);
+    await recarrega();
+    confere(await js(`!!document.querySelector('.placar') || document.querySelectorAll('.porta').length === 3`), 'dados estragados no celular: o app abre mesmo assim');
+    // Volta os dados do teste
+    await js(`localStorage.setItem('familia-pronta-v1', ${JSON.stringify(guardado)})`);
+    await vai(BASE);
+    confere(await js(`/Não substitui a orientação da Defesa Civil/.test(document.body.innerText)`), 'aviso de responsabilidade na tela inicial');
+    confere(await js(`/^https:\\/\\/.+\\/og\\.png$/.test(document.querySelector('meta[property="og:image"]').content)`), 'imagem de prévia do link com endereço completo');
+    // Item marcado com a meta de 7 dias e a meta muda para 30
+    await clica('[data-ir="bugin"]'); await clica('[data-meta="7"]'); await clica('[data-ir="resultado"]');
+    await js(`(() => { const c = document.querySelector('[data-risca="sabonete"]'); if (!c.checked) c.click(); return true; })()`);
+    await clica('[data-ir="bugin"]'); await clica('[data-meta="30"]'); await clica('[data-ir="resultado"]');
+    confere(!(await js(`document.querySelector('[data-risca="sabonete"]').checked`)) && (await js(`/você marcou \\d+; agora são \\d+/.test(document.querySelector('[data-risca="sabonete"]').closest('li').innerText)`)),
+      'meta aumentou: item marcado volta a pedir atenção ("você marcou X; agora são Y")');
+    await clica('[data-ir="bugin"]');
+    confere(await js(`document.querySelector('[data-p="temRemedio"]').disabled && document.querySelector('[data-p="temRemedio"]').checked`), 'remédio marcado no "Sair de casa" aparece no "Ficar em casa"');
+    await clica('[data-ir="home"]');
+
+    // ---------------- 9. Sem internet ----------------
     console.log('\n8. Funciona sem internet');
     const ativo = await js(`navigator.serviceWorker.ready.then(() => true)`);
     confere(ativo, 'service worker instalado');

@@ -174,5 +174,22 @@ const comEquip = calcularBugOut({ membros: [{ nome: 'Zé', idade: 70, sexo: 'M',
 confere(comEquip.mochilas[0].itens.some((it) => it.id === 'equip'), 'quem usa aparelho/bengala recebe o item do equipamento');
 confere(pe.mochilas.some((mo) => temItem(mo, 'fotoPet')), 'pet: foto do dono com o pet');
 
+// ---------------- CONSERTOS DA REVISÃO ----------------
+console.log('\n=== Consertos da revisão ===');
+const alerg = calcularBugOut({ membros: [{ nome: 'Pai', idade: 40, sexo: 'M', peso: 80 }, { nome: 'Lia', idade: 9, sexo: 'F', alergia: true, alergiaAmendoim: true }], pets: [], bo: {} });
+confere(!alerg.mochilas.some((mo) => mo.itens.some((it) => it.id === 'amendoim')), 'alergia a amendoim: ninguém da família leva amendoim');
+const kcalTodos = alerg.mochilas.flatMap((mo) => mo.itens).filter((it) => REF.bugout.comida.some((c) => c.id === it.id))
+  .reduce((a, it) => a + it.qtd * REF.bugout.comida.find((c) => c.id === it.id).kcal, 0);
+confere(kcalTodos >= 3 * (2500 * 80 / 70 + 1300) - 1, `sem amendoim a comida ainda cobre as calorias dos 3 dias (${kcalTodos} kcal)`);
+confere(alerg.avisos.some((a) => a.includes('Alergia a amendoim')) && alerg.avisos.some((a) => a.includes('confira o rótulo')), 'avisos de alergia: amendoim retirado e conferir rótulos');
+const inAlerg = calcularBugIn({ membros: [{ idade: 40, sexo: 'M', peso: 80 }, { idade: 9, sexo: 'F', alergiaAmendoim: true }], pets: [], estoque: {}, meta: 7 });
+confere(!inAlerg.lista.some((x) => x.id === 'semFogao-amendoim'), 'ficar em casa: reserva sem fogão também sem amendoim');
+confere(bb.avisos.some((a) => a.includes('fórmula líquida pronta')) && !pe.avisos.some((a) => a.includes('fórmula líquida')), 'fórmula: aviso da OMS só quando o bebê não mama no peito');
+const inRem = calcularBugIn({ membros: [{ idade: 60, sexo: 'F', peso: 60, remedio: true }], pets: [], estoque: { aguaL: 999, secoKg: 99, remedioDias: 2 }, meta: 7 });
+confere(inRem.limitante === 'Remédio de uso contínuo' && inRem.dias === 2 && inRem.lista.some((x) => x.id === 'remedio'), 'remédio marcado no "Sair de casa" vale no "Ficar em casa"');
+confere(/coe/.test(REF.tratarAgua) && pe.avisos.some((a) => a.includes('coe num pano')), 'tratar água: coar a água turva antes do cloro');
+confere(pesoCorporal({ idade: 12, sexo: 'M' }) === 40.7 && pesoCorporal({ idade: 17, sexo: 'F' }) === 55.2, 'peso 11–17 anos pelo arquivo oficial do CDC (12 anos M = 40,7 kg)');
+confere(/Não substitui/.test(REF.aviso), 'aviso de responsabilidade existe');
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : '\nTudo certo.');
 process.exitCode = falhas ? 1 : 0;

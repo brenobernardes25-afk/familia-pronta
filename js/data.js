@@ -80,7 +80,7 @@ const REF = {
   },
   casa: [
     // Água
-    { id: 'sanitaria', cat: 'agua', nome: 'Água sanitária sem perfume (tratar água: 2 gotas/litro; limpar: 1 parte para 10 de água)', regra: 'familia', unid: 'frasco de 1 L', prio: 'essencial', basico: 'sanitaria' },
+    { id: 'sanitaria', cat: 'agua', nome: 'Água sanitária sem perfume (beber: água turva coada antes, 2 gotas por litro, 30 min; limpar: 1 parte para 10 de água)', regra: 'familia', unid: 'frasco de 1 L', prio: 'essencial', basico: 'sanitaria' },
     { id: 'filtro',    cat: 'agua', nome: 'Filtro de barro ou filtro de água', regra: 'familia', prio: 'extra' },
     // Comida (além da cesta)
     { id: 'sal',       cat: 'comida', nome: 'Sal', regra: 'dia', por: 'ano1', valor: 5, tamanho: 1000, unid: 'pacotes de 1 kg', prio: 'importante' }, // OMS/Ministério da Saúde: até 5 g de sal por dia
@@ -178,6 +178,11 @@ const REF = {
 
   // Desinfecção de água (Ministério da Saúde): 2 gotas de hipoclorito 2,5% por litro, esperar 30 min.
   hipocloritoGotasPorLitro: 2,
+  // Ministério da Saúde: água turva precisa ser coada/decantada ANTES do cloro (o cloro não age bem na sujeira).
+  tratarAgua: 'Se a água estiver turva, coe num pano limpo e deixe a sujeira assentar; use só a parte de cima. Depois pingue 2 gotas de água sanitária (sem perfume) por litro e espere 30 minutos antes de beber.',
+
+  // Aviso de responsabilidade (aparece no app e na impressão)
+  aviso: 'O Família Pronta é um guia de preparação feito a partir de fontes oficiais. Não substitui a orientação da Defesa Civil, do médico, do pediatra ou do veterinário. Em emergência, siga as autoridades: 199 (Defesa Civil), 193 (Bombeiros), 192 (SAMU).',
 
   // Itens básicos de casa (contam na nota e entram na lista se a pessoa não tiver).
   basicos: [
@@ -229,9 +234,10 @@ const REF = {
       { m: 4, M: 7.0, F: 6.4 }, { m: 5, M: 7.5, F: 6.9 }, { m: 6, M: 7.9, F: 7.3 }, { m: 9, M: 8.9, F: 8.2 },
       { m: 12, M: 9.6, F: 8.9 }, { m: 18, M: 10.9, F: 10.2 }, { m: 24, M: 12.2, F: 11.5 }, { m: 36, M: 14.3, F: 13.9 },
       { m: 48, M: 16.3, F: 16.1 }, { m: 60, M: 18.3, F: 18.2 }, { m: 72, M: 20.5, F: 20.2 }, { m: 84, M: 22.9, F: 22.4 },
-      { m: 96, M: 25.4, F: 25.0 }, { m: 108, M: 28.1, F: 28.2 }, { m: 120, M: 31.2, F: 31.9 }, { m: 132, M: 35.6, F: 36.9 },
-      { m: 144, M: 40.0, F: 41.5 }, { m: 156, M: 45.0, F: 46.0 }, { m: 168, M: 50.8, F: 49.4 }, { m: 180, M: 56.0, F: 52.0 },
-      { m: 192, M: 60.8, F: 53.9 }, { m: 204, M: 64.6, F: 55.0 },
+      { m: 96, M: 25.4, F: 25.0 }, { m: 108, M: 28.1, F: 28.2 }, { m: 120, M: 31.2, F: 31.9 },
+      // 11–17 anos: arquivo oficial CDC wtage.csv, coluna P50, idade X,5 anos (conferido)
+      { m: 132, M: 36.1, F: 37.4 }, { m: 144, M: 40.7, F: 41.8 }, { m: 156, M: 45.8, F: 46.0 }, { m: 168, M: 51.2, F: 49.5 },
+      { m: 180, M: 56.5, F: 52.1 }, { m: 192, M: 61.1, F: 53.9 }, { m: 204, M: 64.7, F: 55.2 },
     ],
 
     // Água PARA BEBER levada na mochila (litros/dia). IOM, Dietary Reference Intakes for Water (2005):
@@ -261,7 +267,7 @@ const REF = {
     // minMeses: amendoim/castanha inteiros são risco de engasgo antes dos 4 anos (AAP; SBP).
     comida: [
       { id: 'cracker', nome: 'Biscoito cream cracker',  unid: 'pacotes de 200 g', g: 200, kcal: 864, pct: 0.35 },              // TACO 432 kcal/100 g
-      { id: 'amendoim', nome: 'Amendoim torrado',       unid: 'pacotes de 150 g', g: 150, kcal: 909, pct: 0.30, minMeses: 48 }, // TACO 606 kcal/100 g
+      { id: 'amendoim', nome: 'Amendoim torrado',       unid: 'pacotes de 150 g', g: 150, kcal: 909, pct: 0.30, minMeses: 48, alergeno: 'amendoim' }, // TACO 606 kcal/100 g; sai de TODAS as mochilas se alguém tem alergia a amendoim
       { id: 'maisena', nome: 'Biscoito doce tipo maisena', unid: 'pacotes de 200 g', g: 200, kcal: 886, pct: 0.25 },           // TACO 443 kcal/100 g
       { id: 'sardinha', nome: 'Sardinha em lata (abre-fácil)', unid: 'latas de 125 g', g: 155, kcal: 250, pct: 0.10 },       // ver kcalPorLata; 155 g com a lata
     ],
@@ -334,7 +340,7 @@ const REF = {
       // Um por família
       { id: 'kit',      nome: 'Kit de primeiros socorros (em bolsa fechada ou saco zip)', g: 400, quem: 'familia', prio: 'essencial' },
       { id: 'alcool',   nome: 'Álcool em gel 70%', g: 80, quem: 'familia', prio: 'essencial' },
-      { id: 'sanitaria',nome: 'Água sanitária sem perfume em frasco conta-gotas (2 gotas/litro, esperar 30 min)', g: 60, quem: 'familia', prio: 'essencial' },
+      { id: 'sanitaria',nome: 'Água sanitária sem perfume em frasco conta-gotas (água turva: coe antes; 2 gotas por litro, 30 min)', g: 60, quem: 'familia', prio: 'essencial' },
       { id: 'garrafa',  nome: 'Garrafa vazia de 2 L para encher e tratar água no caminho', g: 50, quem: 'cada5', prio: 'essencial' },
       { id: 'soro',     nome: 'Soro de reidratação oral (4 envelopes, posto de saúde)', g: 120, quem: 'familia', prio: 'importante', prioClima: { calor: 'essencial' } },
       { id: 'protetor', nome: 'Protetor solar', g: 120, quem: 'familia', prio: 'extra', prioClima: { calor: 'importante' } },
