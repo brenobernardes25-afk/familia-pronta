@@ -18,7 +18,11 @@ Três portas na tela inicial:
 
 **📲 Instalar no celular:** a tela inicial avisa que pelo link o app só abre com internet e ensina a instalar (Android: botão "Instalar agora" quando o Chrome deixa; iPhone: Compartilhar → Adicionar à Tela de Início). Se a pessoa abriu pelo Instagram/Facebook/TikTok, o app percebe e explica como abrir no Chrome ou no Safari, porque o navegador de dentro desses apps não instala.
 
-**💾 Meus dados:** salvar uma cópia em arquivo, restaurar e apagar tudo. O app também pede ao navegador para não apagar os dados sozinho.
+**💾 Meus dados:** salvar uma cópia em arquivo, restaurar e apagar tudo. O app também pede ao navegador para não apagar os dados sozinho. Todo dado lido (do celular ou de um arquivo de cópia) passa por uma limpeza: um arquivo estragado ou adulterado não derruba o app nem consegue rodar código. Se uma tela der erro, aparece uma tela de socorro em vez de tela branca.
+
+**Segurança das orientações:** aviso de responsabilidade na tela inicial, nos resultados e no plano impresso (não substitui Defesa Civil, médico, pediatra ou veterinário). Alergia a amendoim tira o amendoim da mochila de todo mundo; alergia grave avisa para conferir os rótulos; bebê na fórmula recebe a orientação da OMS (fórmula líquida pronta). Água turva: coar e decantar antes do cloro (Ministério da Saúde).
+
+**Prévia do link:** `og.png` (1200×630) aparece quando o link é compartilhado no WhatsApp/Instagram.
 
 Também tem: botão de compartilhar o resultado (WhatsApp/Instagram), modo escuro automático, versão para imprimir de todas as telas e tudo cabe na tela do celular sem rolar para o lado.
 
@@ -72,7 +76,7 @@ E abra `http://localhost:8000`.
 2. Settings → Pages → Branch `main`, pasta `/ (root)` → Save.
 3. O link fica `https://SEU-USUARIO.github.io/familia-pronta/`. É esse que vai na bio/direct. **Já publicado em:** https://brenobernardes25-afk.github.io/familia-pronta/ (repositório: https://github.com/brenobernardes25-afk/familia-pronta).
    Para enviar uma atualização: `git add -A`, `git commit -m "o que mudou"`, `git push`. O site atualiza em ~1 minuto.
-4. **A cada atualização**, mude `V = 'fp-v5'` em `sw.js` (v6, v7...), senão o celular continua com a versão antiga. Se criar arquivo novo, coloque o nome dele na lista `ARQ` do `sw.js`. Versão atual: **fp-v5**.
+4. **A cada atualização**, mude `V = 'fp-v6'` em `sw.js` (v7, v8...), senão o celular continua com a versão antiga. Se criar arquivo novo, coloque o nome dele na lista `ARQ` do `sw.js`. Versão atual: **fp-v6**.
 
 ## De onde vêm os números
 
@@ -83,6 +87,7 @@ Fontes usadas (a lista completa também aparece no app, em "Fontes dos números"
 Marcados como `ESTIMATIVA` ou `ADAPTAÇÃO`:
 
 - **Quantidades de higiene e consumo da lista de casa**: sabonete (1 por pessoa por semana), pasta de dente, absorventes (2 pacotes por mulher por mês), lenços umedecidos, sacos de lixo (1 rolo por semana), areia de gato, legumes em lata (1 a cada 2 dias por pessoa) e soro (2 envelopes por pessoa). O item tem fonte (Ready.gov, Ministério da Saúde); a quantidade é nossa.
+- **Peso médio de crianças de 5 a 10 anos** (OMS 2007): valores da tabela, não conferidos no arquivo oficial. Os de 11 a 17 anos foram conferidos no arquivo oficial do CDC (`wtage.csv`).
 - **Peso de cada item da mochila** (lanterna, roupa, fralda, sachê, garrafa…): peso típico do produto, não norma.
 - **Divisão da comida da mochila** (biscoito, amendoim, sardinha): o total de calorias tem fonte (IOM/TACO), a divisão entre os itens é nossa.
 - **1 dia de água nas costas**: Ready.gov pede 3 dias no kit, mas 3 dias de água estouram o peso de quase todo mundo. Os outros 2 dias saem de água tratada no caminho, ou dos galões no carro.

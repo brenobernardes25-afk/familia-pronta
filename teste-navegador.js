@@ -291,7 +291,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     await clica('[data-ir="home"]');
 
     // ---------------- 9. Sem internet ----------------
-    console.log('\n8. Funciona sem internet');
+    console.log('\n9. Funciona sem internet');
     const ativo = await js(`navigator.serviceWorker.ready.then(() => true)`);
     confere(ativo, 'service worker instalado');
     for (let i = 0; i < 30 && !(await js('!!navigator.serviceWorker.controller')); i++) await espera(100);
